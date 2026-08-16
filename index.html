@@ -315,6 +315,14 @@ hr.soft{border:none;border-top:1px solid var(--border-soft);margin:18px 0}
     </div>
   </div>
   <div class="card">
+    <h2>ウィジェット連携（Scriptable）</h2>
+    <p class="muted">無料アプリ「Scriptable」を使うと、ホーム画面ウィジェットに試験カウントダウン・今日の予定・今週の実績を表示できます。①下のボタンでデータをコピー → ②Scriptableで「勉強ウィジェット」を実行、で反映されます（週1回程度の更新でOK）。</p>
+    <div class="timer-ctl" style="justify-content:flex-start">
+      <button class="btn" id="btnWidgetCopy">ウィジェット用データをコピー</button>
+    </div>
+    <div class="muted" id="widgetCopyMsg" style="margin-top:8px"></div>
+  </div>
+  <div class="card">
     <h2>データ</h2>
     <p class="muted">データはこの端末のブラウザ内に保存されます。機種変更や別端末で使う場合はエクスポートしたファイルをインポートしてください。</p>
     <div class="timer-ctl" style="justify-content:flex-start">
@@ -772,6 +780,34 @@ $("btnAddSubj").addEventListener("click",()=>{
   S.subjects.push({id:uid(),name:name,track:$("newSubjTrack").value,archived:false});
   $("newSubjName").value="";
   save();renderAll();
+});
+function buildWidgetData(){
+  const t=todayStr(),mon=mondayOf(t);
+  const weekActual=[];
+  for(let i=0;i<7;i++){
+    const d=addDays(mon,i);
+    weekActual.push(S.sessions.filter(s=>s.date===d).reduce((a,s)=>a+s.minutes,0));
+  }
+  const plans=S.plans.filter(p=>p.date>=mon&&p.date<=addDays(mon,13)).map(p=>({
+    date:p.date,subj:p.subjectId?subjName(p.subjectId):"",min:p.minutes||0,text:p.text||"",done:!!p.done
+  }));
+  return {v:1,updated:new Date().toISOString(),bokiDate:S.settings.bokiDate,cpaDate:S.settings.cpaDate,
+    goalHours:S.settings.goalHours,streak:streak(),weekStart:mon,weekActual:weekActual,plans:plans};
+}
+function widgetCopyFallback(txt,done){
+  const ta=document.createElement("textarea");ta.value=txt;ta.style.position="fixed";ta.style.opacity="0";
+  document.body.appendChild(ta);ta.focus();ta.select();
+  let ok=false;
+  try{ok=document.execCommand("copy");}catch(e){}
+  ta.remove();
+  if(ok)done();else alert("コピーできませんでした。もう一度お試しください。");
+}
+$("btnWidgetCopy").addEventListener("click",()=>{
+  const txt=JSON.stringify(buildWidgetData());
+  const done=()=>{$("widgetCopyMsg").textContent="コピーしました（"+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"})+"）。Scriptableの「勉強ウィジェット」を実行すると反映されます。";};
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(done).catch(()=>widgetCopyFallback(txt,done));
+  }else widgetCopyFallback(txt,done);
 });
 $("btnExport").addEventListener("click",()=>{
   const blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"});
