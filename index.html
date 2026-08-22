@@ -131,6 +131,14 @@ svg.chart{display:block;width:100%;height:auto}
 .hrow .bar i{display:block;height:100%;background:var(--boki);border-radius:4px 4px 4px 4px;min-width:2px}
 .hrow.cpa .bar i{background:var(--cpa)}
 .hrow .val{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink-2);white-space:nowrap}
+/* form grid (record add) */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:12px}
+.form-grid label.f{margin-bottom:0;min-width:0}
+select{max-width:100%}
+.kchips{display:flex;flex-wrap:wrap;gap:8px}
+.kchip{min-height:40px;padding:0 16px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--ink-2);cursor:pointer;font-size:14px}
+.kchip.on{background:var(--boki);border-color:var(--boki);color:#fff;font-weight:600}
+.klabel{display:block;font-size:13px;color:var(--ink-2);margin-bottom:6px;letter-spacing:.04em}
 /* week calendar */
 .wk-nav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
 .wk-nav .range{font-family:var(--serif);font-size:16px;letter-spacing:.04em;font-variant-numeric:tabular-nums;text-align:center;flex:1}
@@ -206,7 +214,10 @@ hr.soft{border:none;border-top:1px solid var(--border-soft);margin:18px 0}
 
   <div class="card">
     <h2>タイマー</h2>
-    <label class="f"><span>科目</span><select id="timerSubject"></select></label>
+    <div class="form-grid">
+      <label class="f"><span>科目</span><select id="timerSubject"></select></label>
+      <label class="f"><span>学習タイプ（任意）</span><select id="timerKind"></select></label>
+    </div>
     <div class="timer-disp" id="timerDisp">0:00:00</div>
     <div class="timer-sub" id="timerSub"></div>
     <div class="timer-ctl">
@@ -254,12 +265,16 @@ hr.soft{border:none;border-top:1px solid var(--border-soft);margin:18px 0}
 <section class="tab" id="tab-log">
   <div class="card">
     <h2>記録を追加</h2>
-    <div class="row-inline">
+    <div class="form-grid">
       <label class="f"><span>日付</span><input type="date" id="addDate"></label>
       <label class="f"><span>科目</span><select id="addSubject"></select></label>
-      <label class="f" style="max-width:120px"><span>時間（分）</span><input type="number" id="addMin" min="1" max="960" value="60"></label>
+      <label class="f"><span>時間（分）</span><input type="number" id="addMin" min="1" max="960" value="60"></label>
     </div>
-    <label class="f" style="margin-top:12px"><span>メモ（任意）</span><input type="text" id="addMemo" placeholder="例：連結会計の総合問題"></label>
+    <div style="margin-bottom:12px">
+      <span class="klabel">学習タイプ（任意・タップで選択）</span>
+      <div class="kchips" id="addKinds"></div>
+    </div>
+    <label class="f"><span>メモ（任意）</span><input type="text" id="addMemo" placeholder="例：連結会計の総合問題"></label>
     <button class="btn primary" id="btnAdd">追加</button>
   </div>
   <div id="logList"></div>
@@ -289,6 +304,12 @@ hr.soft{border:none;border-top:1px solid var(--border-soft);margin:18px 0}
     </div>
     <div id="subjChart"></div>
   </div>
+
+  <div class="card">
+    <h2>学習タイプ別</h2>
+    <p class="muted" style="margin:0 0 12px">期間は上の「科目別」の切り替え（今週/今月/累計）と連動します。</p>
+    <div id="kindChart"></div>
+  </div>
 </section>
 
 <!-- ============ 設定 ============ -->
@@ -312,6 +333,16 @@ hr.soft{border:none;border-top:1px solid var(--border-soft);margin:18px 0}
       <label class="f"><span>科目名</span><input type="text" id="newSubjName" placeholder="例：経営学"></label>
       <label class="f" style="max-width:180px"><span>区分</span><select id="newSubjTrack"><option value="boki">簿記1級</option><option value="cpa">公認会計士</option></select></label>
       <button class="btn" id="btnAddSubj">科目を追加</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>学習タイプ</h2>
+    <p class="muted">記録に付けられる「講義」「問題集」などのタグです。統計タブでタイプ別に集計されます。</p>
+    <ul class="plain" id="kindList"></ul>
+    <hr class="soft">
+    <div class="row-inline">
+      <label class="f"><span>タイプ名</span><input type="text" id="newKindName" placeholder="例：答練"></label>
+      <button class="btn" id="btnAddKind">タイプを追加</button>
     </div>
   </div>
   <div class="card">
@@ -375,6 +406,7 @@ function defaultState(){
       {id:"c4",name:"企業法",track:"cpa",archived:false},
       {id:"c5",name:"租税法",track:"cpa",archived:false}
     ],
+    kinds:["講義","問題集","朗読","テキスト","復習","模試"],
     settings:{bokiDate:"2026-11-15",cpaDate:"2026-12-13",goalHours:25},
     timer:{running:false,startTs:0,subjectId:null}
   };
@@ -383,6 +415,7 @@ let S;
 try{S=JSON.parse(localStorage.getItem(KEY))||defaultState();}catch(e){S=defaultState();}
 if(!S.sessions)S=defaultState();
 if(!S.plans)S.plans=[];
+if(!S.kinds)S.kinds=["講義","問題集","朗読","テキスト","復習","模試"];
 const save=()=>localStorage.setItem(KEY,JSON.stringify(S));
 
 const subjById=id=>S.subjects.find(s=>s.id===id);
@@ -464,6 +497,29 @@ function fillSubjectSelect(sel,withNone){
   }
 }
 
+/* ---------- kinds (学習タイプ) ---------- */
+let selectedKind="";
+function renderKindChips(){
+  const box=$("addKinds");box.innerHTML="";
+  if(S.kinds.indexOf(selectedKind)<0)selectedKind="";
+  S.kinds.forEach(k=>{
+    const b=document.createElement("button");
+    b.type="button";b.className="kchip"+(k===selectedKind?" on":"");
+    b.textContent=k;
+    b.addEventListener("click",()=>{selectedKind=(selectedKind===k?"":k);renderKindChips();});
+    box.appendChild(b);
+  });
+}
+function fillKindSelect(sel){
+  const cur=sel.value;
+  sel.innerHTML="";
+  const o=document.createElement("option");o.value="";o.textContent="（指定なし）";sel.appendChild(o);
+  S.kinds.forEach(k=>{
+    const op=document.createElement("option");op.value=k;op.textContent=k;sel.appendChild(op);
+  });
+  if(S.kinds.indexOf(cur)>=0)sel.value=cur;
+}
+
 /* ---------- timer ---------- */
 let tick=null;
 function timerElapsedSec(){return S.timer.running?Math.floor((Date.now()-S.timer.startTs)/1000):0;}
@@ -475,22 +531,23 @@ function renderTimer(){
     $("timerSub").textContent=subjName(S.timer.subjectId)+" を計測中";
     $("btnStart").disabled=true;$("btnStop").disabled=false;$("btnCancel").disabled=false;
     $("timerSubject").value=S.timer.subjectId;$("timerSubject").disabled=true;
+    $("timerKind").value=S.timer.kind||"";$("timerKind").disabled=true;
   }else{
     $("timerSub").textContent="";
     $("btnStart").disabled=false;$("btnStop").disabled=true;$("btnCancel").disabled=true;
-    $("timerSubject").disabled=false;
+    $("timerSubject").disabled=false;$("timerKind").disabled=false;
   }
 }
 function startTick(){if(!tick)tick=setInterval(()=>{if(S.timer.running)renderTimer();},1000);}
 $("btnStart").addEventListener("click",()=>{
   const sid=$("timerSubject").value;
   if(!sid){alert("科目を追加してください（設定タブ）");return;}
-  S.timer={running:true,startTs:Date.now(),subjectId:sid};
+  S.timer={running:true,startTs:Date.now(),subjectId:sid,kind:$("timerKind").value||""};
   save();renderTimer();startTick();
 });
 $("btnStop").addEventListener("click",()=>{
   const min=Math.max(1,Math.round(timerElapsedSec()/60));
-  S.sessions.push({id:uid(),date:todayStr(),subjectId:S.timer.subjectId,minutes:min,memo:""});
+  S.sessions.push({id:uid(),date:todayStr(),subjectId:S.timer.subjectId,minutes:min,memo:"",kind:S.timer.kind||""});
   S.timer={running:false,startTs:0,subjectId:null};
   save();renderAll();
 });
@@ -532,8 +589,8 @@ function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",
 $("btnAdd").addEventListener("click",()=>{
   const date=$("addDate").value,sid=$("addSubject").value,min=parseInt($("addMin").value,10);
   if(!date||!sid||!(min>0)){alert("日付・科目・時間を確認してください");return;}
-  S.sessions.push({id:uid(),date:date,subjectId:sid,minutes:min,memo:$("addMemo").value.trim()});
-  $("addMemo").value="";
+  S.sessions.push({id:uid(),date:date,subjectId:sid,minutes:min,memo:$("addMemo").value.trim(),kind:selectedKind});
+  $("addMemo").value="";selectedKind="";
   save();renderAll();
 });
 function renderLog(){
@@ -553,7 +610,9 @@ function renderLog(){
     byDate[d].forEach(s=>{
       const li=document.createElement("li");li.className="sess";
       li.innerHTML='<span class="dot '+(subjTrack(s.subjectId)==="cpa"?"cpa":"")+'"></span>'+
-        '<span class="name">'+esc(subjName(s.subjectId))+(s.memo?"<em>"+esc(s.memo)+"</em>":"")+"</span>"+
+        '<span class="name">'+esc(subjName(s.subjectId))+
+        (s.kind?' <span class="chip">'+esc(s.kind)+"</span>":"")+
+        (s.memo?"<em>"+esc(s.memo)+"</em>":"")+"</span>"+
         '<span class="min">'+fmtMin(s.minutes)+"</span>";
       const del=document.createElement("button");del.className="del";del.textContent="×";del.setAttribute("aria-label","削除");
       del.addEventListener("click",()=>{
@@ -665,7 +724,7 @@ $("rangeSeg").querySelectorAll("button").forEach(b=>{
   b.addEventListener("click",()=>{
     range=b.dataset.r;
     $("rangeSeg").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
-    renderSubjChart();
+    renderSubjChart();renderKindChart();
   });
 });
 function renderTiles(){
@@ -752,6 +811,33 @@ function renderSubjChart(){
   });
 }
 
+function rangeBounds(){
+  const t=todayStr();
+  if(range==="week"){const mon=mondayOf(t);return [mon,addDays(mon,6)];}
+  if(range==="month")return [monthKey(t)+"-01",monthKey(t)+"-31"];
+  return ["0000","9999"];
+}
+function renderKindChart(){
+  const box=$("kindChart");box.innerHTML="";
+  const b=rangeBounds();
+  const per={};
+  S.sessions.forEach(s=>{
+    if(s.date>=b[0]&&s.date<=b[1]){
+      const k=s.kind||"未分類";
+      per[k]=(per[k]||0)+s.minutes;
+    }
+  });
+  const keys=Object.keys(per).sort((a,b2)=>per[b2]-per[a]);
+  if(!keys.length){box.innerHTML='<div class="empty">この期間の記録はありません</div>';return;}
+  const max=per[keys[0]];
+  keys.forEach(k=>{
+    const row=document.createElement("div");
+    row.className="hrow";
+    row.innerHTML='<span class="nm">'+esc(k)+'</span><span class="bar"><i style="width:'+(per[k]/max*100)+'%"></i></span><span class="val">'+fmtMin(per[k])+"</span>";
+    box.appendChild(row);
+  });
+}
+
 /* ---------- settings ---------- */
 function renderConf(){
   $("cfgBokiDate").value=S.settings.bokiDate||"";
@@ -770,7 +856,27 @@ function renderConf(){
     });
     li.appendChild(del);ul.appendChild(li);
   });
+  const kul=$("kindList");kul.innerHTML="";
+  S.kinds.forEach(k=>{
+    const li=document.createElement("li");li.className="subj-row";
+    li.innerHTML='<span class="nm">'+esc(k)+"</span>";
+    const del=document.createElement("button");del.className="del btn ghost";del.style.minHeight="36px";del.style.padding="0 12px";del.textContent="削除";
+    del.addEventListener("click",()=>{
+      if(!confirm("「"+k+"」を削除しますか？（過去の記録のタグは残ります）"))return;
+      S.kinds=S.kinds.filter(x=>x!==k);
+      save();renderAll();
+    });
+    li.appendChild(del);kul.appendChild(li);
+  });
 }
+$("btnAddKind").addEventListener("click",()=>{
+  const name=$("newKindName").value.trim();
+  if(!name){alert("タイプ名を入力してください");return;}
+  if(S.kinds.indexOf(name)>=0){alert("同じ名前のタイプがあります");return;}
+  S.kinds.push(name);
+  $("newKindName").value="";
+  save();renderAll();
+});
 $("cfgBokiDate").addEventListener("change",e=>{S.settings.bokiDate=e.target.value;save();renderCountdown();});
 $("cfgCpaDate").addEventListener("change",e=>{S.settings.cpaDate=e.target.value;save();renderCountdown();});
 $("cfgGoal").addEventListener("change",e=>{const v=parseInt(e.target.value,10);if(v>0){S.settings.goalHours=v;save();renderToday();}});
@@ -828,6 +934,7 @@ $("importFile").addEventListener("change",e=>{
       if(!confirm("現在のデータをインポート内容で置き換えます。よろしいですか？"))return;
       S=d;S.timer={running:false,startTs:0,subjectId:null};
       if(!S.plans)S.plans=[];
+      if(!S.kinds)S.kinds=["講義","問題集","朗読","テキスト","復習","模試"];
       save();renderAll();
       alert("インポートしました");
     }catch(err){alert("読み込めませんでした: "+err.message);}
@@ -847,8 +954,10 @@ function renderAll(){
   $("todayDate").textContent=d.getFullYear()+"年"+(d.getMonth()+1)+"月"+d.getDate()+"日（"+"日月火水木金土"[d.getDay()]+"）";
   fillSubjectSelect($("timerSubject"));
   fillSubjectSelect($("addSubject"));
+  fillKindSelect($("timerKind"));
+  renderKindChips();
   if(!$("addDate").value)$("addDate").value=todayStr();
-  renderCountdown();renderTimer();renderToday();renderWeek();renderLog();renderTiles();renderWeekChart();renderSubjChart();renderConf();
+  renderCountdown();renderTimer();renderToday();renderWeek();renderLog();renderTiles();renderWeekChart();renderSubjChart();renderKindChart();renderConf();
   if(S.timer.running){$("timerSubject").value=S.timer.subjectId;startTick();}
 }
 renderAll();
