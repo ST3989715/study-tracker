@@ -776,7 +776,55 @@ async function extractPdfText(file){
   }
   return all.join("\n");
 }
+// CPA会計学院の標準日程表（週単位の受講目安）専用パーサ
+function parseCpaSchedule(txt){
+  const lines=txt.split(/\r?\n/).map(l=>l.trim());
+  let year=(new Date()).getFullYear();
+  for(const l of lines){
+    const m=l.match(/(\d{4})\s*年\s*\d{1,2}\s*月\s*\d{1,2}\s*日更新/);
+    if(m){year=+m[1];break;}
+  }
+  const subjMap={"簿記":"財務会計論","財務":"財務会計論","財計":"財務会計論","財理":"財務会計論",
+    "管理":"管理会計論","監査":"監査論","企業":"企業法","租税":"租税法",
+    "経営":"経営学","経済":"経済学","民法":"民法","統計":"統計学"};
+  const subs=S.subjects.filter(s=>!s.archived);
+  let month=null,weekDays=[],slot=0;
+  const out=[];
+  lines.forEach(line=>{
+    if(!line)return;
+    let m=line.match(/^(\d{1,2})\s*月\s*科\s*目/);
+    if(m){
+      const mo=+m[1];
+      if(month!==null&&mo<month)year++;
+      month=mo;weekDays=[];
+      return;
+    }
+    m=line.match(/^第\d+週\s+(.+)$/);
+    if(m&&month){
+      weekDays=m[1].split(/\s+/).filter(t=>/^\d{1,2}$/.test(t)).map(Number).filter(d=>d>=1&&d<=31);
+      slot=0;
+      return;
+    }
+    m=line.match(/^(簿記|財務|財計|財理|管理|監査|企業|租税|経営|経済|民法|統計)\s+(.+)$/);
+    if(m&&month&&weekDays.length){
+      const label=m[1];
+      const codes=m[2].split(/\s+/).filter(t=>t&&!/^\d+$/.test(t)&&/\d/.test(t));
+      const mapped=subjMap[label]||label;
+      const sub=subs.find(s=>s.name.indexOf(mapped)>=0||mapped.indexOf(s.name)>=0);
+      codes.forEach(code=>{
+        const day=weekDays[slot%weekDays.length];slot++;
+        out.push({date:year+"-"+pad(month)+"-"+pad(day),subjectId:sub?sub.id:"",minutes:180,text:label+" "+code,on:true});
+      });
+    }
+  });
+  out.sort((a,b)=>a.date<b.date?-1:1);
+  return out.slice(0,300);
+}
 function parseScheduleText(txt){
+  if(/第\d+週/.test(txt)&&/月\s*科\s*目/.test(txt)){
+    const cpa=parseCpaSchedule(txt);
+    if(cpa.length)return cpa;
+  }
   const out=[];
   const t=todayStr();
   const subs=S.subjects.filter(s=>!s.archived).slice().sort((a,b)=>b.name.length-a.name.length);
