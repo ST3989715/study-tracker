@@ -169,6 +169,12 @@ select{max-width:100%}
 .plan-item .px{flex:none;border:none;background:none;color:var(--ink-3);font-size:14px;padding:0 2px;cursor:pointer;line-height:1}
 .day .addp{margin-top:auto;border:none;background:none;color:var(--ink-3);font-size:12px;cursor:pointer;padding:6px 0 0;text-align:left}
 .day .addp:hover{color:var(--ink)}
+/* bulk import drafts */
+textarea{font:inherit;background:var(--card);color:inherit;border:1px solid var(--border);border-radius:10px;padding:10px;width:100%;box-sizing:border-box}
+.draft-head{display:flex;align-items:baseline;gap:10px;margin:16px 0 6px;flex-wrap:wrap}
+.drow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-soft)}
+.drow input,.drow select{min-height:40px}
+.drow input[type=checkbox]{width:20px;height:20px;min-height:0;accent-color:var(--boki)}
 /* modal */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:60;display:none;align-items:center;justify-content:center;padding:16px}
 .overlay.on{display:flex}
@@ -258,6 +264,18 @@ hr.soft{border:none;border-top:1px solid var(--border-soft);margin:18px 0}
     </div>
     <div class="cal-scroll"><div class="cal" id="calGrid"></div></div>
     <p class="muted" style="margin:12px 0 0">予定はタップで完了✓、×で削除。「＋予定」から科目・時間・内容を登録できます。</p>
+  </div>
+
+  <div class="card">
+    <h2>予定の一括取り込み（標準日程表など）</h2>
+    <p class="muted">予備校の日程表PDFやテキストから予定の<b>下書き</b>を作成します。内容を確認・修正してから登録するので、誤読があっても安心です。日付（例：9/1、9月1日、2026/9/1）を含む行が予定の候補になります。</p>
+    <div class="timer-ctl" style="justify-content:flex-start">
+      <button class="btn" id="btnPdfPick">PDFを選択</button>
+      <input type="file" id="pdfFile" accept="application/pdf" style="display:none">
+      <button class="btn" id="btnParseText">貼り付けテキストから作成</button>
+    </div>
+    <label class="f" style="margin-top:12px"><span>テキスト貼り付け欄（1行1件。例：9/1 財務会計論 講義① 180分）</span><textarea id="importText" rows="4"></textarea></label>
+    <div id="draftArea"></div>
   </div>
 </section>
 
@@ -717,6 +735,135 @@ function renderWeek(){
   $("wkPlanned").textContent=wkPlan?fmtMin(wkPlan):(planN?planN+"件":"0件");
   $("wkDoneRate").textContent=planN?("消化 "+planDone+"/"+planN+"件"):"";
 }
+
+/* ---------- bulk plan import ---------- */
+let drafts=[];
+let pdfjsReady=null;
+function ensurePdfJs(){
+  if(window.pdfjsLib)return Promise.resolve();
+  if(pdfjsReady)return pdfjsReady;
+  pdfjsReady=new Promise((res,rej)=>{
+    const s=document.createElement("script");
+    s.src="pdfjs/pdf.min.js";
+    s.onload=()=>{
+      try{
+        pdfjsLib.GlobalWorkerOptions.workerSrc="pdfjs/pdf.worker.min.js";
+        res();
+      }catch(e){pdfjsReady=null;rej(e);}
+    };
+    s.onerror=()=>{pdfjsReady=null;rej(new Error("PDF解析ライブラリを読み込めませんでした。通信環境を確認してください。"));};
+    document.head.appendChild(s);
+  });
+  return pdfjsReady;
+}
+async function extractPdfText(file){
+  await ensurePdfJs();
+  const buf=await file.arrayBuffer();
+  const doc=await pdfjsLib.getDocument({data:buf}).promise;
+  const all=[];
+  for(let p=1;p<=doc.numPages;p++){
+    const page=await doc.getPage(p);
+    const tc=await page.getTextContent();
+    const rows={};
+    tc.items.forEach(it=>{
+      if(!it.str||!it.str.trim())return;
+      const y=Math.round(it.transform[5]/3)*3;
+      (rows[y]=rows[y]||[]).push({x:it.transform[4],str:it.str});
+    });
+    Object.keys(rows).map(Number).sort((a,b)=>b-a).forEach(y=>{
+      all.push(rows[y].sort((a,b)=>a.x-b.x).map(i=>i.str).join(" "));
+    });
+  }
+  return all.join("\n");
+}
+function parseScheduleText(txt){
+  const out=[];
+  const t=todayStr();
+  const subs=S.subjects.filter(s=>!s.archived).slice().sort((a,b)=>b.name.length-a.name.length);
+  txt.split(/\r?\n/).forEach(line=>{
+    line=line.trim();
+    if(!line)return;
+    const m=line.match(/(?:(\d{4})[年\/\-\.])?(\d{1,2})[月\/\-\.](\d{1,2})日?/);
+    if(!m)return;
+    const mo=+m[2],da=+m[3];
+    if(mo<1||mo>12||da<1||da>31)return;
+    const yr=m[1]?+m[1]:(new Date()).getFullYear();
+    let date=yr+"-"+pad(mo)+"-"+pad(da);
+    if(!m[1]&&date<addDays(t,-60))date=(yr+1)+"-"+pad(mo)+"-"+pad(da);
+    let rest=(line.slice(0,m.index)+" "+line.slice(m.index+m[0].length)).replace(/\s+/g," ").trim();
+    let sid="";
+    for(const s of subs){if(rest.indexOf(s.name)>=0){sid=s.id;break;}}
+    let min=0;
+    const mm=rest.match(/(\d{1,3})\s*分/);
+    const mh=rest.match(/(\d+(?:\.\d+)?)\s*時間/);
+    if(mm)min=+mm[1];else if(mh)min=Math.round(+mh[1]*60);
+    out.push({date:date,subjectId:sid,minutes:min,text:rest.slice(0,80),on:true});
+  });
+  return out.slice(0,200);
+}
+function renderDrafts(){
+  const box=$("draftArea");box.innerHTML="";
+  if(!drafts.length)return;
+  const head=document.createElement("div");head.className="draft-head";
+  head.innerHTML="<b>下書き "+drafts.length+"件</b><span class='muted'>チェックを外した行は登録されません。日付・科目・時間・内容は修正できます。</span>";
+  box.appendChild(head);
+  drafts.forEach(d=>{
+    const row=document.createElement("div");row.className="drow";
+    const cb=document.createElement("input");cb.type="checkbox";cb.checked=d.on;
+    cb.addEventListener("change",()=>{d.on=cb.checked;});
+    const di=document.createElement("input");di.type="date";di.value=d.date;di.style.width="150px";
+    di.addEventListener("change",()=>{d.date=di.value;});
+    const ss=document.createElement("select");fillSubjectSelect(ss,true);ss.value=d.subjectId||"";ss.style.width="150px";
+    ss.addEventListener("change",()=>{d.subjectId=ss.value;});
+    const mi=document.createElement("input");mi.type="number";mi.placeholder="分";mi.min="0";mi.max="960";
+    if(d.minutes)mi.value=d.minutes;
+    mi.style.width="80px";
+    mi.addEventListener("change",()=>{d.minutes=parseInt(mi.value,10)||0;});
+    const ti=document.createElement("input");ti.type="text";ti.value=d.text;ti.style.flex="1";ti.style.minWidth="150px";
+    ti.addEventListener("change",()=>{d.text=ti.value.trim();});
+    row.appendChild(cb);row.appendChild(di);row.appendChild(ss);row.appendChild(mi);row.appendChild(ti);
+    box.appendChild(row);
+  });
+  const ctl=document.createElement("div");ctl.className="timer-ctl";ctl.style.justifyContent="flex-start";ctl.style.marginTop="14px";
+  const reg=document.createElement("button");reg.className="btn primary";reg.textContent="チェックした予定を登録";
+  reg.addEventListener("click",()=>{
+    let n=0,skip=0;
+    drafts.forEach(d=>{
+      if(!d.on||!d.date)return;
+      if(!d.subjectId&&!d.text)return;
+      if(S.plans.some(p=>p.date===d.date&&p.text===d.text&&p.subjectId===(d.subjectId||""))){skip++;return;}
+      S.plans.push({id:uid(),date:d.date,subjectId:d.subjectId||"",minutes:d.minutes||0,text:d.text,done:false});
+      n++;
+    });
+    drafts=[];
+    save();renderAll();
+    $("draftArea").innerHTML='<div class="muted" style="margin-top:10px">'+n+"件の予定を登録しました"+(skip?"（重複"+skip+"件はスキップ）":"")+"。カレンダーに反映されています。</div>";
+  });
+  const clr=document.createElement("button");clr.className="btn ghost";clr.textContent="下書きを破棄";
+  clr.addEventListener("click",()=>{drafts=[];renderDrafts();});
+  ctl.appendChild(reg);ctl.appendChild(clr);
+  box.appendChild(ctl);
+}
+$("btnPdfPick").addEventListener("click",()=>$("pdfFile").click());
+$("pdfFile").addEventListener("change",async e=>{
+  const f=e.target.files[0];if(!f)return;
+  $("draftArea").innerHTML='<div class="muted" style="margin-top:10px">PDFを解析中…</div>';
+  try{
+    const txt=await extractPdfText(f);
+    drafts=parseScheduleText(txt);
+    if(!drafts.length){
+      $("draftArea").innerHTML='<div class="muted" style="margin-top:10px">日付を含む行が見つかりませんでした。表の構造によっては自動抽出できない場合があります。日程表の内容をテキストで貼り付ける方法もお試しください。</div>';
+    }else renderDrafts();
+  }catch(err){
+    $("draftArea").innerHTML='<div class="muted" style="margin-top:10px">読み込めませんでした：'+esc(err&&err.message?err.message:String(err))+"</div>";
+  }
+  e.target.value="";
+});
+$("btnParseText").addEventListener("click",()=>{
+  drafts=parseScheduleText($("importText").value);
+  if(!drafts.length){alert("日付を含む行が見つかりませんでした。\n例：9/1 財務会計論 講義① 180分");return;}
+  renderDrafts();
+});
 
 /* ---------- stats ---------- */
 let range="week";
