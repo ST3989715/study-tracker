@@ -276,6 +276,7 @@ hr.soft{border:none;border-top:1px solid var(--border-soft);margin:18px 0}
     </div>
     <label class="f" style="margin-top:12px"><span>テキスト貼り付け欄（1行1件。例：9/1 財務会計論 講義① 180分）</span><textarea id="importText" rows="4"></textarea></label>
     <div id="draftArea"></div>
+    <div id="pdfPreview"></div>
   </div>
 </section>
 
@@ -756,10 +757,7 @@ function ensurePdfJs(){
   });
   return pdfjsReady;
 }
-async function extractPdfText(file){
-  await ensurePdfJs();
-  const buf=await file.arrayBuffer();
-  const doc=await pdfjsLib.getDocument({data:buf}).promise;
+async function extractDocText(doc){
   const all=[];
   for(let p=1;p<=doc.numPages;p++){
     const page=await doc.getPage(p);
@@ -896,17 +894,111 @@ $("btnPdfPick").addEventListener("click",()=>$("pdfFile").click());
 $("pdfFile").addEventListener("change",async e=>{
   const f=e.target.files[0];if(!f)return;
   $("draftArea").innerHTML='<div class="muted" style="margin-top:10px">PDFを解析中…</div>';
+  $("pdfPreview").innerHTML="";
   try{
-    const txt=await extractPdfText(f);
+    await ensurePdfJs();
+    const buf=await f.arrayBuffer();
+    const doc=await pdfjsLib.getDocument({data:buf}).promise;
+    const txt=await extractDocText(doc);
     drafts=parseScheduleText(txt);
     if(!drafts.length){
       $("draftArea").innerHTML='<div class="muted" style="margin-top:10px">日付を含む行が見つかりませんでした。表の構造によっては自動抽出できない場合があります。日程表の内容をテキストで貼り付ける方法もお試しください。</div>';
     }else renderDrafts();
+    await renderSchedulePreview(doc);
   }catch(err){
     $("draftArea").innerHTML='<div class="muted" style="margin-top:10px">読み込めませんでした：'+esc(err&&err.message?err.message:String(err))+"</div>";
   }
   e.target.value="";
 });
+// 「講義・答練受講目安」（左側の予定表）だけを切り出して表示・PDF保存
+let scheduleCrops=[];
+async function renderSchedulePreview(doc){
+  const box=$("pdfPreview");box.innerHTML="";
+  scheduleCrops=[];
+  for(let p=1;p<=doc.numPages;p++){
+    const page=await doc.getPage(p);
+    const tc=await page.getTextContent();
+    const rows={};
+    tc.items.forEach(it=>{
+      if(!it.str||!it.str.trim())return;
+      const y=Math.round(it.transform[5]/3)*3;
+      (rows[y]=rows[y]||[]).push({x:it.transform[4],str:it.str});
+    });
+    let headerY=null,contentMinY=null;
+    Object.keys(rows).map(Number).forEach(y=>{
+      const line=rows[y].sort((a,b)=>a.x-b.x).map(i=>i.str).join(" ").trim();
+      const isSched=/^\d{1,2}\s*月\s*科\s*目/.test(line)||/^第\d+週/.test(line)||/^(簿記|財務|財計|財理|管理|監査|企業|租税|経営|経済|民法|統計)\s+\S/.test(line);
+      if(!isSched)return;
+      if(/^\d{1,2}\s*月\s*科\s*目/.test(line)&&(headerY===null||y>headerY))headerY=y;
+      if(contentMinY===null||y<contentMinY)contentMinY=y;
+    });
+    if(headerY===null)continue;
+    const vp=page.getViewport({scale:2});
+    const full=document.createElement("canvas");
+    full.width=vp.width;full.height=vp.height;
+    await page.render({canvasContext:full.getContext("2d"),viewport:vp,intent:"print"}).promise;
+    const topPt=headerY+20;
+    const bottomPt=Math.max(contentMinY-26,8);
+    const cropWpt=212,cropHpt=topPt-bottomPt;
+    const c=document.createElement("canvas");
+    c.width=Math.round(cropWpt*2);c.height=Math.round(cropHpt*2);
+    c.getContext("2d").drawImage(full,0,Math.round(vp.height-topPt*2),c.width,c.height,0,0,c.width,c.height);
+    scheduleCrops.push({canvas:c,pw:cropWpt,ph:cropHpt});
+  }
+  if(!scheduleCrops.length)return;
+  const h=document.createElement("div");h.className="draft-head";
+  h.innerHTML="<b>予定表プレビュー（受講目安の部分のみ）</b>";
+  box.appendChild(h);
+  scheduleCrops.forEach(cr=>{
+    const img=document.createElement("img");
+    img.src=cr.canvas.toDataURL("image/png");
+    img.alt="受講目安";
+    img.style.cssText="max-width:100%;display:block;border:1px solid var(--border);border-radius:10px;margin-bottom:10px;background:#fff";
+    box.appendChild(img);
+  });
+  const ctl=document.createElement("div");ctl.className="timer-ctl";ctl.style.justifyContent="flex-start";
+  const b=document.createElement("button");b.className="btn";b.textContent="この予定表をPDFで保存";
+  b.addEventListener("click",()=>{
+    const blob=buildPdfFromCrops(scheduleCrops);
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download="受講目安_"+todayStr()+".pdf";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+  ctl.appendChild(b);
+  box.appendChild(ctl);
+}
+function buildPdfFromCrops(crops){
+  const chunks=[];let pos=0;const offsets=[];
+  function push(s){chunks.push(s);pos+=s.length;}
+  function obj(n,body){offsets[n]=pos;push(n+" 0 obj\n"+body+"\nendobj\n");}
+  push("%PDF-1.4\n");
+  const n=crops.length;
+  const kids=crops.map((_,i)=>(3+i*3)+" 0 R").join(" ");
+  obj(1,"<< /Type /Catalog /Pages 2 0 R >>");
+  obj(2,"<< /Type /Pages /Kids ["+kids+"] /Count "+n+" >>");
+  crops.forEach((cr,i)=>{
+    const po=3+i*3,co=4+i*3,xo=5+i*3;
+    const jpeg=atob(cr.canvas.toDataURL("image/jpeg",0.87).split(",")[1]);
+    const content="q "+cr.pw+" 0 0 "+cr.ph+" 0 0 cm /Im0 Do Q";
+    obj(po,"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 "+cr.pw+" "+cr.ph+"] /Resources << /XObject << /Im0 "+xo+" 0 R >> >> /Contents "+co+" 0 R >>");
+    obj(co,"<< /Length "+content.length+" >>\nstream\n"+content+"\nendstream");
+    offsets[xo]=pos;
+    push(xo+" 0 obj\n<< /Type /XObject /Subtype /Image /Width "+cr.canvas.width+" /Height "+cr.canvas.height+" /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length "+jpeg.length+" >>\nstream\n");
+    push(jpeg);
+    push("\nendstream\nendobj\n");
+  });
+  const total=2+n*3;
+  const xrefPos=pos;
+  let xref="xref\n0 "+(total+1)+"\n0000000000 65535 f \n";
+  for(let i=1;i<=total;i++)xref+=String(offsets[i]).padStart(10,"0")+" 00000 n \n";
+  push(xref);
+  push("trailer\n<< /Size "+(total+1)+" /Root 1 0 R >>\nstartxref\n"+xrefPos+"\n%%EOF");
+  const bytes=new Uint8Array(pos);let o=0;
+  chunks.forEach(s=>{for(let i=0;i<s.length;i++)bytes[o++]=s.charCodeAt(i)&0xFF;});
+  return new Blob([bytes],{type:"application/pdf"});
+}
 $("btnParseText").addEventListener("click",()=>{
   drafts=parseScheduleText($("importText").value);
   if(!drafts.length){alert("日付を含む行が見つかりませんでした。\n例：9/1 財務会計論 講義① 180分");return;}
@@ -1163,6 +1255,7 @@ new MutationObserver(()=>renderWeekChart()).observe(document.documentElement,{at
 // midnight rollover check every minute
 let lastDay=todayStr();
 setInterval(()=>{if(todayStr()!==lastDay){lastDay=todayStr();renderAll();}},60000);
+window._dbg={renderSchedulePreview:renderSchedulePreview,buildPdfFromCrops:buildPdfFromCrops,ensurePdfJs:ensurePdfJs};
 })();
 </script>
 <script>
