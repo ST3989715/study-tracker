@@ -227,13 +227,19 @@ table.tt td{vertical-align:top;padding:0}
 .tcell.cpa{background:var(--cpa-soft);border-color:transparent;border-left:3px solid var(--cpa)}
 .tcell .ts{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-weight:600}
 .tcell .tx{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:11px;color:var(--ink-2);margin-top:2px}
-.tcell .tm{font-size:10px;color:var(--ink-3);font-variant-numeric:tabular-nums;margin-right:auto}
-.tcell .tfoot{display:flex;align-items:center;justify-content:flex-end;gap:3px;margin-top:5px}
-.tcell .tedit{font-size:10px;color:var(--ink-2);border:1px solid var(--border);background:var(--card);border-radius:5px;padding:1px 6px;line-height:1.4}
+.tcell .tm{display:block;font-size:10px;color:var(--ink-3);font-variant-numeric:tabular-nums;margin-top:4px}
 .tcell .tk{display:inline-block;font-size:10px;line-height:1.6;padding:0 6px;border-radius:5px;background:var(--card);border:1px solid var(--border);color:var(--ink-2);margin-top:3px}
 .tcell.done{opacity:.55}
 .tcell.done .ts{text-decoration:line-through}
-.tcell .tdel{color:var(--ink-3);font-size:15px;line-height:1;padding:1px 5px}
+.tcell.dragsrc{opacity:.3}
+.drag-ghost{position:fixed;z-index:80;pointer-events:none;transform:translate(-50%,-50%);box-shadow:var(--shadow-lg);opacity:.95}
+table.tt td.drop .tcell{border-color:var(--boki);box-shadow:0 0 0 2px var(--boki);background:var(--boki-soft)}
+table.tt.editmode .tcell:not(.empty){outline:1px dashed var(--ink-3);outline-offset:-3px}
+/* カレンダー上部のバー */
+.calbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.calbar .seg{margin-bottom:0}
+.editbtn{margin-left:auto;min-height:42px;padding:0 18px;border:1px solid var(--border);background:var(--card);border-radius:10px;color:var(--ink-2);cursor:pointer;font-size:14px}
+.editbtn.on{background:var(--amber);border-color:var(--amber);color:#fff;font-weight:600}
 .acell{background:var(--border-soft);border-radius:9px;padding:7px 4px;font-size:12px;text-align:center;font-variant-numeric:tabular-nums;color:var(--ink-2)}
 .acell b{color:var(--ink)}
 .acell .dot{display:inline-block;vertical-align:1px;margin-right:2px}
@@ -351,9 +357,12 @@ hr.soft{border:none;border-top:1px solid var(--border-soft);margin:18px 0}
 <!-- ============ 週間 ============ -->
 <section class="tab" id="tab-week">
   <div class="card">
-    <div class="seg" id="calModeSeg">
-      <button data-m="week" class="on">週間（時間割）</button>
-      <button data-m="month">月間</button>
+    <div class="calbar">
+      <div class="seg" id="calModeSeg">
+        <button data-m="week" class="on">週間（時間割）</button>
+        <button data-m="month">月間</button>
+      </div>
+      <button class="editbtn" id="btnEditMode" aria-pressed="false">編集</button>
     </div>
     <div class="wk-nav">
       <button id="wkPrev" aria-label="前へ">← 前週</button>
@@ -909,6 +918,8 @@ function renderLog(){
 /* ---------- week calendar ---------- */
 let calMode="week",weekOff=0,monthOff=0;
 let editingId=null;
+let editMode=false;
+let suppressClick=false;
 $("calModeSeg").querySelectorAll("button").forEach(b=>{
   b.addEventListener("click",()=>{setCalMode(b.dataset.m);});
 });
@@ -917,6 +928,12 @@ function setCalMode(m){
   $("calModeSeg").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x.dataset.m===m));
   renderWeek();
 }
+$("btnEditMode").addEventListener("click",()=>{
+  editMode=!editMode;
+  $("btnEditMode").classList.toggle("on",editMode);
+  $("btnEditMode").setAttribute("aria-pressed",editMode?"true":"false");
+  renderWeek();
+});
 $("wkPrev").addEventListener("click",()=>{if(calMode==="week")weekOff--;else monthOff--;renderWeek();});
 $("wkNext").addEventListener("click",()=>{if(calMode==="week")weekOff++;else monthOff++;renderWeek();});
 $("wkToday").addEventListener("click",()=>{weekOff=0;monthOff=0;renderWeek();});
@@ -1008,9 +1025,13 @@ function renderWeek(){
   $("wkPrev").textContent=wk?"← 前週":"← 前月";
   $("wkNext").textContent=wk?"翌週 →":"翌月 →";
   $("wkToday").textContent=wk?"今週へ戻る":"今月へ戻る";
-  $("calHint").textContent=wk
-    ?"コマをタップで完了✓、「編集」で内容・日付・コマを変更、×で削除。空きコマの＋から追加できます。"
-    :"日付をタップすると、その週の時間割を開きます。";
+  $("btnEditMode").hidden=!wk;
+  $("ttGrid").classList.toggle("editmode",wk&&editMode);
+  $("calHint").textContent=!wk
+    ?"日付をタップすると、その週の時間割を開きます。"
+    :(editMode
+      ?"編集モード：コマをタップすると内容・日付・コマを変更できます（削除もここから）。"
+      :"コマをタップで完了✓、長押ししてドラッグすると別の日・コマへ移せます。空きコマの＋から追加。");
   if(wk)renderTimetable();else renderMonth();
 }
 // その日の予定をコマ（行）に割り当てる。slot 未設定の予定は空いている上の行から詰める
@@ -1034,28 +1055,112 @@ function planCell(p,s){
   b.className="tcell "+(tr==="cpa"?"cpa":(p.subjectId?"boki":""))+(p.done?" done":"");
   b.innerHTML='<span class="ts">'+(p.done?"✓ ":"")+esc(p.subjectId?subjName(p.subjectId):"予定")+"</span>"+
     (p.kind?'<span class="tk">'+esc(p.kind)+"</span>":"")+
-    (p.text?'<span class="tx">'+esc(p.text)+"</span>":"");
-  const foot=document.createElement("span");foot.className="tfoot";
-  if(p.minutes){
-    const m=document.createElement("span");m.className="tm";m.textContent=p.minutes+"分";
-    foot.appendChild(m);
-  }
-  const ed=document.createElement("span");
-  ed.className="tedit";ed.textContent="編集";ed.setAttribute("role","button");ed.setAttribute("aria-label","予定を編集");
-  ed.addEventListener("click",ev=>{ev.stopPropagation();openPlanEdit(p,s);});
-  foot.appendChild(ed);
-  const x=document.createElement("span");
-  x.className="tdel";x.textContent="×";x.setAttribute("role","button");x.setAttribute("aria-label","予定を削除");
-  x.addEventListener("click",ev=>{
-    ev.stopPropagation();
-    if(!confirm("この予定を削除しますか？"))return;
-    S.plans=S.plans.filter(y=>y.id!==p.id);
-    save();renderWeek();
+    (p.text?'<span class="tx">'+esc(p.text)+"</span>":"")+
+    (p.minutes?'<span class="tm">'+p.minutes+"分</span>":"");
+  b.setAttribute("aria-label",(p.subjectId?subjName(p.subjectId):"予定")+(editMode?"：タップで編集":"：タップで完了、長押しで移動"));
+  b.addEventListener("click",()=>{
+    if(suppressClick)return;
+    if(editMode)openPlanEdit(p,s);
+    else{p.done=!p.done;save();renderWeek();}
   });
-  foot.appendChild(x);
-  b.appendChild(foot);
-  b.addEventListener("click",()=>{p.done=!p.done;save();renderWeek();});
+  attachDrag(b,p,s);
   return b;
+}
+/* ---------- 予定のドラッグ移動 ---------- */
+let drag=null;
+function beginDrag(p,s,cell,x,y){
+  const g=cell.cloneNode(true);
+  g.className=cell.className+" drag-ghost";
+  g.style.width=cell.offsetWidth+"px";
+  g.style.minHeight=cell.offsetHeight+"px";
+  document.body.appendChild(g);
+  cell.classList.add("dragsrc");
+  drag={p:p,s:s,cell:cell,ghost:g,target:null};
+  moveGhost(x,y);
+}
+function moveGhost(x,y){
+  if(!drag)return;
+  drag.ghost.style.left=x+"px";
+  drag.ghost.style.top=y+"px";
+  const el=document.elementFromPoint(x,y);
+  const td=el?el.closest("#ttGrid tbody td"):null;
+  const next=(td&&td.dataset.date)?td:null;
+  if(next!==drag.target){
+    if(drag.target)drag.target.classList.remove("drop");
+    if(next)next.classList.add("drop");
+    drag.target=next;
+  }
+}
+function endDrag(){
+  if(!drag)return;
+  const d=drag;drag=null;
+  d.ghost.remove();
+  d.cell.classList.remove("dragsrc");
+  if(d.target)d.target.classList.remove("drop");
+  if(d.target&&d.target.dataset.date){
+    const nd=d.target.dataset.date,ns=parseInt(d.target.dataset.slot,10);
+    const od=d.p.date,os=(typeof d.p.slot==="number")?d.p.slot:d.s;
+    if(od!==nd||os!==ns){
+      // 移動先に予定があれば入れ替える
+      const other=d.target.dataset.planId?S.plans.find(x=>x.id===d.target.dataset.planId):null;
+      if(other&&other.id!==d.p.id){other.date=od;other.slot=os;}
+      d.p.date=nd;d.p.slot=ns;
+      save();
+    }
+  }
+  renderWeek();
+}
+function cancelDrag(){
+  if(!drag)return;
+  const d=drag;drag=null;
+  d.ghost.remove();
+  d.cell.classList.remove("dragsrc");
+  if(d.target)d.target.classList.remove("drop");
+}
+function attachDrag(b,p,s){
+  let timer=null,sx=0,sy=0,on=false;
+  const done=()=>{suppressClick=true;setTimeout(()=>{suppressClick=false;},400);};
+  b.addEventListener("touchstart",ev=>{
+    if(ev.touches.length!==1)return;
+    sx=ev.touches[0].clientX;sy=ev.touches[0].clientY;on=false;
+    timer=setTimeout(()=>{timer=null;on=true;beginDrag(p,s,b,sx,sy);},320);
+  },{passive:true});
+  b.addEventListener("touchmove",ev=>{
+    const t=ev.touches[0];
+    if(!on){
+      // 指が動いたらスクロールとみなして長押しを取り消す
+      if(timer&&(Math.abs(t.clientX-sx)>10||Math.abs(t.clientY-sy)>10)){clearTimeout(timer);timer=null;}
+      return;
+    }
+    ev.preventDefault();
+    moveGhost(t.clientX,t.clientY);
+  },{passive:false});
+  b.addEventListener("touchend",ev=>{
+    if(timer){clearTimeout(timer);timer=null;}
+    if(on){ev.preventDefault();on=false;done();endDrag();}
+  },{passive:false});
+  b.addEventListener("touchcancel",()=>{
+    if(timer){clearTimeout(timer);timer=null;}
+    if(on){on=false;cancelDrag();}
+  });
+  b.addEventListener("mousedown",ev=>{
+    if(ev.button!==0)return;
+    sx=ev.clientX;sy=ev.clientY;on=false;
+    const move=e2=>{
+      if(!on){
+        if(Math.abs(e2.clientX-sx)<=6&&Math.abs(e2.clientY-sy)<=6)return;
+        on=true;beginDrag(p,s,b,e2.clientX,e2.clientY);
+      }
+      moveGhost(e2.clientX,e2.clientY);
+    };
+    const up=()=>{
+      document.removeEventListener("mousemove",move);
+      document.removeEventListener("mouseup",up);
+      if(on){on=false;done();endDrag();}
+    };
+    document.addEventListener("mousemove",move);
+    document.addEventListener("mouseup",up);
+  });
 }
 function emptyCell(date,slot){
   const b=document.createElement("button");
@@ -1094,6 +1199,8 @@ function renderTimetable(){
     days.forEach((d,di)=>{
       const td=document.createElement("td");
       const hit=byDay[di].find(x=>x.s===r);
+      td.dataset.date=d;td.dataset.slot=String(r);
+      td.dataset.planId=hit?hit.p.id:"";
       td.appendChild(hit?planCell(hit.p,hit.s):emptyCell(d,r));
       tr.appendChild(td);
     });
