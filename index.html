@@ -221,17 +221,19 @@ table.tt thead th.sun{color:var(--danger)}
 table.tt thead th.today.sun{color:#fff}
 table.tt thead th b{display:block;font-size:13px;font-variant-numeric:tabular-nums}
 table.tt td{vertical-align:top;padding:0}
-.tcell{display:block;width:100%;min-height:72px;border:1px solid var(--border);background:var(--card);border-radius:10px;padding:6px 7px 16px;text-align:left;cursor:pointer;position:relative;font-size:12px;line-height:1.3;color:var(--ink);font-family:inherit}
+.tcell{display:block;width:100%;min-height:72px;border:1px solid var(--border);background:var(--card);border-radius:10px;padding:6px 7px;text-align:left;cursor:pointer;position:relative;font-size:12px;line-height:1.3;color:var(--ink);font-family:inherit}
 .tcell.empty{border-style:dashed;color:var(--ink-3);background:none;display:flex;align-items:center;justify-content:center;font-size:17px;padding:6px 7px}
 .tcell.boki{background:var(--boki-soft);border-color:transparent;border-left:3px solid var(--boki)}
 .tcell.cpa{background:var(--cpa-soft);border-color:transparent;border-left:3px solid var(--cpa)}
 .tcell .ts{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-weight:600}
 .tcell .tx{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:11px;color:var(--ink-2);margin-top:2px}
-.tcell .tm{position:absolute;left:7px;bottom:2px;font-size:10px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.tcell .tm{font-size:10px;color:var(--ink-3);font-variant-numeric:tabular-nums;margin-right:auto}
+.tcell .tfoot{display:flex;align-items:center;justify-content:flex-end;gap:3px;margin-top:5px}
+.tcell .tedit{font-size:10px;color:var(--ink-2);border:1px solid var(--border);background:var(--card);border-radius:5px;padding:1px 6px;line-height:1.4}
 .tcell .tk{display:inline-block;font-size:10px;line-height:1.6;padding:0 6px;border-radius:5px;background:var(--card);border:1px solid var(--border);color:var(--ink-2);margin-top:3px}
 .tcell.done{opacity:.55}
 .tcell.done .ts{text-decoration:line-through}
-.tcell .tdel{position:absolute;right:3px;bottom:2px;color:var(--ink-3);font-size:14px;padding:2px 6px;line-height:1}
+.tcell .tdel{color:var(--ink-3);font-size:15px;line-height:1;padding:1px 5px}
 .acell{background:var(--border-soft);border-radius:9px;padding:7px 4px;font-size:12px;text-align:center;font-variant-numeric:tabular-nums;color:var(--ink-2)}
 .acell b{color:var(--ink)}
 .acell .dot{display:inline-block;vertical-align:1px;margin-right:2px}
@@ -533,8 +535,12 @@ hr.soft{border:none;border-top:1px solid var(--border-soft);margin:18px 0}
 
 <div class="overlay" id="planOverlay">
   <div class="modal">
-    <h2>勉強予定を追加</h2>
+    <h2 id="planTitle">勉強予定を追加</h2>
     <div class="mdate" id="planDateLabel"></div>
+    <div class="form-grid">
+      <label class="f"><span>日付</span><input type="date" id="planDateInput"></label>
+      <label class="f"><span>コマ</span><select id="planSlot"></select></label>
+    </div>
     <div class="form-grid">
       <label class="f"><span>科目</span><select id="planSubject"></select></label>
       <label class="f"><span>学習タイプ（任意）</span><select id="planKind"></select></label>
@@ -542,6 +548,7 @@ hr.soft{border:none;border-top:1px solid var(--border-soft);margin:18px 0}
     <label class="f" style="max-width:140px"><span>予定時間（分・任意）</span><input type="number" id="planMin" min="0" max="960" placeholder="60"></label>
     <label class="f"><span>内容（任意）</span><input type="text" id="planText" placeholder="例：過去問 第158回 / テキストCh.12"></label>
     <div class="timer-ctl" style="justify-content:flex-end;margin-top:4px">
+      <button class="btn ghost danger-txt" id="planDelete" hidden>削除</button>
       <button class="btn ghost" id="planCancel">キャンセル</button>
       <button class="btn primary" id="planSave">追加</button>
     </div>
@@ -901,7 +908,7 @@ function renderLog(){
 
 /* ---------- week calendar ---------- */
 let calMode="week",weekOff=0,monthOff=0;
-let planDate=null,planSlot=null;
+let editingId=null;
 $("calModeSeg").querySelectorAll("button").forEach(b=>{
   b.addEventListener("click",()=>{setCalMode(b.dataset.m);});
 });
@@ -914,28 +921,82 @@ $("wkPrev").addEventListener("click",()=>{if(calMode==="week")weekOff--;else mon
 $("wkNext").addEventListener("click",()=>{if(calMode==="week")weekOff++;else monthOff++;renderWeek();});
 $("wkToday").addEventListener("click",()=>{weekOff=0;monthOff=0;renderWeek();});
 
-function openPlanModal(date,slot){
-  planDate=date;
-  planSlot=(typeof slot==="number")?slot:null;
-  const d=dateOf(date);
-  $("planDateLabel").textContent=d.getFullYear()+"年"+(d.getMonth()+1)+"月"+d.getDate()+"日（"+"日月火水木金土"[d.getDay()]+"）"+
-    (planSlot!==null?("　"+(planSlot+1)+"限"):"");
+function fillSlotSelect(sel,cur){
+  sel.innerHTML="";
+  for(let i=0;i<12;i++){
+    const o=document.createElement("option");
+    o.value=String(i);o.textContent=(i+1)+"限";
+    sel.appendChild(o);
+  }
+  sel.value=String(typeof cur==="number"?Math.max(0,Math.min(11,cur)):0);
+}
+function updatePlanDateLabel(){
+  const ds=$("planDateInput").value;
+  if(!ds){$("planDateLabel").textContent="";return;}
+  const d=dateOf(ds);
+  $("planDateLabel").textContent=d.getFullYear()+"年"+(d.getMonth()+1)+"月"+d.getDate()+"日（"+"日月火水木金土"[d.getDay()]+"）";
+}
+function preparePlanModal(v){
+  $("planDateInput").value=v.date;
+  fillSlotSelect($("planSlot"),v.slot);
   fillSubjectSelect($("planSubject"),true);
+  $("planSubject").value=v.subjectId||"";
   fillKindSelect($("planKind"));
-  $("planKind").value="";
-  $("planMin").value="";$("planText").value="";
+  $("planKind").value=v.kind||"";
+  $("planMin").value=v.minutes?v.minutes:"";
+  $("planText").value=v.text||"";
+  updatePlanDateLabel();
   $("planOverlay").classList.add("on");
 }
-$("planCancel").addEventListener("click",()=>$("planOverlay").classList.remove("on"));
-$("planOverlay").addEventListener("click",e=>{if(e.target===$("planOverlay"))$("planOverlay").classList.remove("on");});
+function openPlanModal(date,slot){
+  editingId=null;
+  $("planTitle").textContent="勉強予定を追加";
+  $("planSave").textContent="追加";
+  $("planDelete").hidden=true;
+  preparePlanModal({date:date,slot:(typeof slot==="number")?slot:0});
+}
+// 登録済みの予定を編集する（日付・コマも変更できる）
+function openPlanEdit(p,s){
+  editingId=p.id;
+  $("planTitle").textContent="予定を編集";
+  $("planSave").textContent="保存";
+  $("planDelete").hidden=false;
+  preparePlanModal({date:p.date,slot:(typeof p.slot==="number")?p.slot:s,
+    subjectId:p.subjectId,kind:p.kind,minutes:p.minutes,text:p.text});
+}
+function closePlanModal(){editingId=null;$("planOverlay").classList.remove("on");}
+$("planCancel").addEventListener("click",closePlanModal);
+$("planOverlay").addEventListener("click",e=>{if(e.target===$("planOverlay"))closePlanModal();});
+$("planDateInput").addEventListener("change",updatePlanDateLabel);
 $("planSave").addEventListener("click",()=>{
+  const date=$("planDateInput").value;
   const sid=$("planSubject").value;
+  const kind=$("planKind").value||"";
   const min=parseInt($("planMin").value,10)||0;
   const text=$("planText").value.trim();
+  const slot=parseInt($("planSlot").value,10)||0;
+  if(!date){alert("日付を入力してください");return;}
   if(!sid&&!text){alert("科目か内容のどちらかを入力してください");return;}
-  const obj={id:uid(),date:planDate,subjectId:sid||"",minutes:min,text:text,done:false,kind:$("planKind").value||""};
-  if(planSlot!==null)obj.slot=planSlot;
-  S.plans.push(obj);
+  if(editingId){
+    const p=S.plans.find(x=>x.id===editingId);
+    if(p){
+      p.date=date;p.subjectId=sid||"";p.minutes=min;p.text=text;p.kind=kind;p.slot=slot;
+    }
+  }else{
+    S.plans.push({id:uid(),date:date,subjectId:sid||"",minutes:min,text:text,
+      done:false,kind:kind,slot:slot});
+  }
+  // 別の週へ移した場合は、その週を表示する
+  weekOff=Math.round((dateOf(mondayOf(date))-dateOf(mondayOf(todayStr())))/604800000);
+  editingId=null;
+  $("planOverlay").classList.remove("on");
+  save();renderWeek();
+});
+$("planDelete").addEventListener("click",()=>{
+  if(!editingId)return;
+  if(!confirm("この予定を削除しますか？"))return;
+  S.plans=S.plans.filter(x=>x.id!==editingId);
+  editingId=null;
   $("planOverlay").classList.remove("on");
   save();renderWeek();
 });
@@ -948,7 +1009,7 @@ function renderWeek(){
   $("wkNext").textContent=wk?"翌週 →":"翌月 →";
   $("wkToday").textContent=wk?"今週へ戻る":"今月へ戻る";
   $("calHint").textContent=wk
-    ?"コマをタップで完了✓、×で削除。空きコマの＋から予定を追加できます。"
+    ?"コマをタップで完了✓、「編集」で内容・日付・コマを変更、×で削除。空きコマの＋から追加できます。"
     :"日付をタップすると、その週の時間割を開きます。";
   if(wk)renderTimetable();else renderMonth();
 }
@@ -967,14 +1028,22 @@ function planSlots(plans){
   });
   return placed;
 }
-function planCell(p){
+function planCell(p,s){
   const b=document.createElement("button");
   const tr=p.subjectId?subjTrack(p.subjectId):"";
   b.className="tcell "+(tr==="cpa"?"cpa":(p.subjectId?"boki":""))+(p.done?" done":"");
   b.innerHTML='<span class="ts">'+(p.done?"✓ ":"")+esc(p.subjectId?subjName(p.subjectId):"予定")+"</span>"+
     (p.kind?'<span class="tk">'+esc(p.kind)+"</span>":"")+
-    (p.minutes?'<span class="tm">'+p.minutes+"分</span>":"")+
     (p.text?'<span class="tx">'+esc(p.text)+"</span>":"");
+  const foot=document.createElement("span");foot.className="tfoot";
+  if(p.minutes){
+    const m=document.createElement("span");m.className="tm";m.textContent=p.minutes+"分";
+    foot.appendChild(m);
+  }
+  const ed=document.createElement("span");
+  ed.className="tedit";ed.textContent="編集";ed.setAttribute("role","button");ed.setAttribute("aria-label","予定を編集");
+  ed.addEventListener("click",ev=>{ev.stopPropagation();openPlanEdit(p,s);});
+  foot.appendChild(ed);
   const x=document.createElement("span");
   x.className="tdel";x.textContent="×";x.setAttribute("role","button");x.setAttribute("aria-label","予定を削除");
   x.addEventListener("click",ev=>{
@@ -983,7 +1052,8 @@ function planCell(p){
     S.plans=S.plans.filter(y=>y.id!==p.id);
     save();renderWeek();
   });
-  b.appendChild(x);
+  foot.appendChild(x);
+  b.appendChild(foot);
   b.addEventListener("click",()=>{p.done=!p.done;save();renderWeek();});
   return b;
 }
@@ -1024,7 +1094,7 @@ function renderTimetable(){
     days.forEach((d,di)=>{
       const td=document.createElement("td");
       const hit=byDay[di].find(x=>x.s===r);
-      td.appendChild(hit?planCell(hit.p):emptyCell(d,r));
+      td.appendChild(hit?planCell(hit.p,hit.s):emptyCell(d,r));
       tr.appendChild(td);
     });
     tb.appendChild(tr);
