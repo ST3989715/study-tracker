@@ -229,7 +229,20 @@ table.tt td{vertical-align:top;padding:0}
 .tcell .tx{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:11px;color:var(--ink-2);margin-top:2px}
 .tcell .tm{display:block;font-size:10px;color:var(--ink-3);font-variant-numeric:tabular-nums;margin-top:4px}
 .tcell .tk{display:inline-block;font-size:10px;line-height:1.6;padding:0 6px;border-radius:5px;background:var(--card);border:1px solid var(--border);color:var(--ink-2);margin-top:3px}
+.tcell .tk.rev{background:var(--amber-soft);color:var(--amber);border-color:transparent;font-weight:600}
 .tcell.done{opacity:.55}
+/* 復習の登録ダイアログ */
+.rvlist{display:flex;flex-direction:column;gap:8px}
+.rvrow{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;cursor:pointer;font-variant-numeric:tabular-nums;transition:opacity .15s}
+.rvrow input{width:20px;height:20px;accent-color:var(--boki);flex:none;margin:0}
+.rvrow .rn{font-weight:600;min-width:3.2em}
+.rvrow .ri{color:var(--ink-2);font-size:13px}
+.rvrow .rd{margin-left:auto;font-size:14px}
+.rvrow.off{opacity:.4}
+.rvtoggle{display:flex;align-items:center;gap:10px;font-size:15px;cursor:pointer}
+.rvtoggle input{width:22px;height:22px;accent-color:var(--boki);margin:0}
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,16px);background:var(--ink);color:var(--ground);padding:11px 18px;border-radius:12px;font-size:14px;z-index:90;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:calc(100% - 32px);box-shadow:var(--shadow-lg)}
+.toast.on{opacity:1;transform:translate(-50%,0)}
 .tcell.done .ts{text-decoration:line-through}
 .tcell.dragsrc{opacity:.3}
 .drag-ghost{position:fixed;z-index:80;pointer-events:none;transform:translate(-50%,-50%);box-shadow:var(--shadow-lg);opacity:.95}
@@ -509,6 +522,16 @@ hr.soft{border:none;border-top:1px solid var(--border-soft);margin:18px 0}
     </div>
   </div>
   <div class="card">
+    <h2>復習の自動登録</h2>
+    <p class="muted">時間割で予定を完了✓にしたとき、下で選んだ学習タイプなら復習の予定をまとめて登録できます。登録前に日付を確認でき、不要な回は外せます。</p>
+    <label class="rvtoggle"><input type="checkbox" id="rvEnabled"> 完了したときに復習の登録を提案する</label>
+    <span class="klabel" style="margin-top:16px">提案する学習タイプ</span>
+    <div class="kchips" id="rvKinds"></div>
+    <span class="klabel" style="margin-top:16px">復習のタイミング（完了した日から数えて）</span>
+    <div class="kchips" id="rvDays"></div>
+    <label class="f" style="max-width:220px;margin-top:16px"><span>復習1回あたりの時間（分）</span><input type="number" id="rvMin" min="0" max="600"></label>
+  </div>
+  <div class="card">
     <h2>ウィジェット連携（Scriptable）</h2>
     <p class="muted">無料アプリ「Scriptable」を使うと、ホーム画面ウィジェットに試験カウントダウン・今日の予定・今週の実績を表示できます。①下のボタンでデータをコピー → ②Scriptableで「勉強ウィジェット」を実行、で反映されます（週1回程度の更新でOK）。</p>
     <div class="timer-ctl" style="justify-content:flex-start">
@@ -541,6 +564,20 @@ hr.soft{border:none;border-top:1px solid var(--border-soft);margin:18px 0}
 </main>
 </div>
 <div class="tooltip" id="tooltip"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<div class="overlay" id="reviewOverlay">
+  <div class="modal">
+    <h2>復習を登録しますか？</h2>
+    <div class="mdate" id="reviewSrc"></div>
+    <div class="rvlist" id="reviewList"></div>
+    <label class="f" style="max-width:200px;margin-top:14px"><span>復習1回あたりの時間（分）</span><input type="number" id="reviewMin" min="0" max="600"></label>
+    <div class="timer-ctl" style="justify-content:flex-end;margin-top:4px">
+      <button class="btn ghost" id="reviewSkip">今回はしない</button>
+      <button class="btn primary" id="reviewAdd">復習を登録</button>
+    </div>
+  </div>
+</div>
 
 <div class="overlay" id="planOverlay">
   <div class="modal">
@@ -589,7 +626,8 @@ function defaultState(){
       {id:"c5",name:"租税法",track:"cpa",archived:false}
     ],
     kinds:["講義","問題集","朗読","テキスト","復習","模試"],
-    settings:{bokiDate:"2026-11-15",cpaDate:"2026-12-13",goalHours:25},
+    settings:{bokiDate:"2026-11-15",cpaDate:"2026-12-13",goalHours:25,
+      review:{enabled:true,kinds:["講義"],days:[3,7,30],minutes:30}},
     timer:{running:false,onBreak:false,startTs:0,accumMs:0,breakStartTs:0,breakMs:0,subjectId:null,kind:""}
   };
 }
@@ -605,6 +643,14 @@ function normalizeState(st){
   if(typeof st.settings.goalHours!=="number")st.settings.goalHours=d.settings.goalHours;
   if(typeof st.settings.bokiDate!=="string")st.settings.bokiDate=d.settings.bokiDate;
   if(typeof st.settings.cpaDate!=="string")st.settings.cpaDate=d.settings.cpaDate;
+  if(!st.settings.review||typeof st.settings.review!=="object")st.settings.review=d.settings.review;
+  else{
+    const rv=st.settings.review;
+    if(typeof rv.enabled!=="boolean")rv.enabled=true;
+    if(!Array.isArray(rv.kinds))rv.kinds=["講義"];
+    if(!Array.isArray(rv.days))rv.days=[3,7,30];
+    if(typeof rv.minutes!=="number")rv.minutes=30;
+  }
   // 旧バージョンのタイマー状態（休憩なし）を移行
   if(!st.timer||typeof st.timer.accumMs!=="number"){
     const old=st.timer||{};
@@ -1054,18 +1100,113 @@ function planCell(p,s){
   const tr=p.subjectId?subjTrack(p.subjectId):"";
   b.className="tcell "+(tr==="cpa"?"cpa":(p.subjectId?"boki":""))+(p.done?" done":"");
   b.innerHTML='<span class="ts">'+(p.done?"✓ ":"")+esc(p.subjectId?subjName(p.subjectId):"予定")+"</span>"+
-    (p.kind?'<span class="tk">'+esc(p.kind)+"</span>":"")+
+    (p.kind?'<span class="tk'+((p.reviewOf||p.kind==="復習")?" rev":"")+'">'+esc(p.kind)+"</span>":"")+
     (p.text?'<span class="tx">'+esc(p.text)+"</span>":"")+
     (p.minutes?'<span class="tm">'+p.minutes+"分</span>":"");
   b.setAttribute("aria-label",(p.subjectId?subjName(p.subjectId):"予定")+(editMode?"：タップで編集":"：タップで完了、長押しで移動"));
   b.addEventListener("click",()=>{
     if(suppressClick)return;
     if(editMode)openPlanEdit(p,s);
-    else{p.done=!p.done;save();renderWeek();}
+    else{
+      p.done=!p.done;save();renderWeek();
+      if(p.done&&reviewEligible(p))openReviewDialog(p);
+    }
   });
   attachDrag(b,p,s);
   return b;
 }
+/* ---------- 復習の自動登録 ---------- */
+const RV_PRESETS=[[1,"翌日"],[3,"3日後"],[7,"1週間後"],[14,"2週間後"],[30,"1か月後"],[60,"2か月後"]];
+function rvLabel(days){
+  const hit=RV_PRESETS.find(x=>x[0]===days);
+  return hit?hit[1]:days+"日後";
+}
+let toastTimer=null;
+function toast(msg){
+  const t=$("toast");
+  t.textContent=msg;t.classList.add("on");
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove("on"),3000);
+}
+// 提案するのは：設定ON・対象の学習タイプ・復習自身ではない・まだ復習を登録していない予定
+function reviewEligible(p){
+  const r=S.settings.review;
+  if(!r||!r.enabled||p.reviewOf||!r.days.length)return false;
+  if(!p.kind||r.kinds.indexOf(p.kind)<0)return false;
+  return !S.plans.some(x=>x.reviewOf===p.id);
+}
+let reviewFor=null;
+function openReviewDialog(p){
+  reviewFor=p;
+  const r=S.settings.review;
+  $("reviewSrc").textContent=(p.subjectId?subjName(p.subjectId):"予定")+"・"+p.kind+
+    (p.text?"「"+p.text+"」":"")+" を完了しました。";
+  const base=todayStr(),box=$("reviewList");
+  box.innerHTML="";
+  r.days.slice().sort((a,b)=>a-b).forEach((days,i)=>{
+    const dd=dateOf(addDays(base,days));
+    const row=document.createElement("label");row.className="rvrow";
+    row.innerHTML='<input type="checkbox" checked data-days="'+days+'"><span class="rn">'+(i+1)+'回目</span>'+
+      '<span class="ri">'+rvLabel(days)+'</span><span class="rd">'+(dd.getMonth()+1)+"/"+dd.getDate()+
+      "（"+"日月火水木金土"[dd.getDay()]+"）</span>";
+    const cb=row.querySelector("input");
+    cb.addEventListener("change",()=>row.classList.toggle("off",!cb.checked));
+    box.appendChild(row);
+  });
+  $("reviewMin").value=r.minutes;
+  $("reviewOverlay").classList.add("on");
+}
+function closeReviewDialog(){reviewFor=null;$("reviewOverlay").classList.remove("on");}
+$("reviewSkip").addEventListener("click",closeReviewDialog);
+$("reviewOverlay").addEventListener("click",e=>{if(e.target===$("reviewOverlay"))closeReviewDialog();});
+$("reviewAdd").addEventListener("click",()=>{
+  const p=reviewFor;
+  if(!p){closeReviewDialog();return;}
+  const min=Math.max(0,parseInt($("reviewMin").value,10)||0);
+  const picks=[...$("reviewList").querySelectorAll("input:checked")].map(c=>+c.dataset.days);
+  const base=todayStr(),dates=[];
+  picks.forEach((days,i)=>{
+    const date=addDays(base,days);
+    dates.push(date.slice(5).replace("-","/").replace(/^0/,""));
+    S.plans.push({id:uid(),date:date,subjectId:p.subjectId||"",minutes:min,
+      text:(i+1)+"回目"+(p.text?"・"+p.text:""),done:false,kind:"復習",reviewOf:p.id,reviewNo:i+1});
+  });
+  closeReviewDialog();
+  save();renderAll();
+  if(picks.length)toast("復習を"+picks.length+"件登録しました（"+dates.join("・")+"）");
+});
+function renderReviewConf(){
+  const r=S.settings.review;
+  $("rvEnabled").checked=!!r.enabled;
+  const kb=$("rvKinds");kb.innerHTML="";
+  S.kinds.forEach(k=>{
+    const b=document.createElement("button");b.type="button";
+    b.className="kchip"+(r.kinds.indexOf(k)>=0?" on":"");b.textContent=k;
+    b.addEventListener("click",()=>{
+      const i=r.kinds.indexOf(k);
+      if(i>=0)r.kinds.splice(i,1);else r.kinds.push(k);
+      save();renderReviewConf();
+    });
+    kb.appendChild(b);
+  });
+  const db=$("rvDays");db.innerHTML="";
+  RV_PRESETS.forEach(([days,lab])=>{
+    const b=document.createElement("button");b.type="button";
+    b.className="kchip"+(r.days.indexOf(days)>=0?" on":"");b.textContent=lab;
+    b.addEventListener("click",()=>{
+      const i=r.days.indexOf(days);
+      if(i>=0)r.days.splice(i,1);else{r.days.push(days);r.days.sort((a,c)=>a-c);}
+      save();renderReviewConf();
+    });
+    db.appendChild(b);
+  });
+  $("rvMin").value=r.minutes;
+}
+$("rvEnabled").addEventListener("change",e=>{S.settings.review.enabled=e.target.checked;save();});
+$("rvMin").addEventListener("change",e=>{
+  const v=parseInt(e.target.value,10);
+  if(v>=0){S.settings.review.minutes=v;save();}
+});
 /* ---------- 予定のドラッグ移動 ---------- */
 let drag=null;
 function beginDrag(p,s,cell,x,y){
@@ -2013,7 +2154,7 @@ function renderAll(){
   if(!$("addDate").value)$("addDate").value=todayStr();
   renderCountdown();renderTimer();renderToday();renderWeek();renderLog();
   renderTiles();renderHeatmap();renderTrendChart();renderDowChart();renderPace();
-  renderWeekChart();renderSubjChart();renderKindChart();renderConf();renderBackupInfo();
+  renderWeekChart();renderSubjChart();renderKindChart();renderConf();renderBackupInfo();renderReviewConf();
   if(S.timer.running){$("timerSubject").value=S.timer.subjectId;startTick();}
 }
 renderAll();
