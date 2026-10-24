@@ -241,6 +241,15 @@ table.tt td{vertical-align:top;padding:0}
 .rvrow.off{opacity:.4}
 .rvtoggle{display:flex;align-items:center;gap:10px;font-size:15px;cursor:pointer}
 .rvtoggle input{width:22px;height:22px;accent-color:var(--boki);margin:0}
+.rvtoggle.small{font-size:13px;gap:8px}
+.rvtoggle.small input{width:18px;height:18px}
+/* 予定から計測中の表示 */
+.plan-link{background:var(--boki-soft);border-radius:12px;padding:10px 12px;margin:0 0 6px;font-size:13px;color:var(--ink-2);display:flex;flex-direction:column;gap:6px}
+.plan-link b{color:var(--ink)}
+.tcell.live{box-shadow:0 0 0 2px var(--amber)}
+/* 予定をタップしたときの操作メニュー */
+.sheet-acts{display:flex;flex-direction:column;gap:10px;margin-top:4px}
+.sheet-acts .btn{width:100%}
 .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,16px);background:var(--ink);color:var(--ground);padding:11px 18px;border-radius:12px;font-size:14px;z-index:90;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:calc(100% - 32px);box-shadow:var(--shadow-lg)}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 .tcell.done .ts{text-decoration:line-through}
@@ -330,6 +339,11 @@ hr.soft{border:none;border-top:1px solid var(--border-soft);margin:18px 0}
     <div class="form-grid">
       <label class="f"><span>科目</span><select id="timerSubject"></select></label>
       <label class="f"><span>学習タイプ（任意）</span><select id="timerKind"></select></label>
+    </div>
+    <label class="f"><span>勉強の内容（任意・計測中も書けます）</span><input type="text" id="timerMemo" placeholder="例：連結会計 テキストP.120〜135"></label>
+    <div class="plan-link" id="planLink" hidden>
+      <div>予定から計測中：<b id="planLinkName"></b></div>
+      <label class="rvtoggle small"><input type="checkbox" id="planLinkDone"> 終了したらこの予定を完了にする</label>
     </div>
     <div class="timer-wrap">
       <svg class="ring" viewBox="0 0 200 200" aria-hidden="true">
@@ -566,6 +580,19 @@ hr.soft{border:none;border-top:1px solid var(--border-soft);margin:18px 0}
 <div class="tooltip" id="tooltip"></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+<div class="overlay" id="sheetOverlay">
+  <div class="modal">
+    <h2 id="sheetTitle"></h2>
+    <div class="mdate" id="sheetSub"></div>
+    <div class="sheet-acts">
+      <button class="btn primary" id="sheetTimer">▶&#xFE0E; タイマーで計測</button>
+      <button class="btn" id="sheetDone">✓ 完了にする</button>
+      <button class="btn" id="sheetEdit">編集</button>
+      <button class="btn ghost" id="sheetClose">閉じる</button>
+    </div>
+  </div>
+</div>
+
 <div class="overlay" id="reviewOverlay">
   <div class="modal">
     <h2>復習を登録しますか？</h2>
@@ -660,6 +687,9 @@ function normalizeState(st){
       st.timer.subjectId=old.subjectId;st.timer.kind=old.kind||"";
     }
   }
+  if(typeof st.timer.memo!=="string")st.timer.memo="";
+  if(typeof st.timer.planId!=="string")st.timer.planId=null;
+  if(typeof st.timer.completePlan!=="boolean")st.timer.completePlan=true;
   return st;
 }
 const BPREFIX=KEY+"__bk_";
@@ -813,7 +843,7 @@ function fillKindSelect(sel){
 /* ---------- timer ---------- */
 let tick=null;
 const RING_C=540.4;
-function idleTimer(){return {running:false,onBreak:false,startTs:0,accumMs:0,breakStartTs:0,breakMs:0,subjectId:null,kind:""};}
+function idleTimer(){return {running:false,onBreak:false,startTs:0,accumMs:0,breakStartTs:0,breakMs:0,subjectId:null,kind:"",memo:"",planId:null,completePlan:true};}
 function studyMs(){
   const t=S.timer;
   return (t.accumMs||0)+((t.running&&!t.onBreak&&t.startTs)?Date.now()-t.startTs:0);
@@ -854,13 +884,23 @@ function renderTimer(){
   const pct=Math.min(1,liveMin/tgt);
   $("ringFg").setAttribute("stroke-dashoffset",(RING_C*(1-pct)).toFixed(1));
   $("timerGoalNote").textContent="今日 "+fmtH(liveMin)+" / "+fmtH(tgt)+"h";
+  // 入力中は上書きしない（毎秒の再描画でカーソルが飛ばないように）
+  if(document.activeElement!==$("timerMemo"))$("timerMemo").value=t.memo||"";
+  const lp=(t.running&&t.planId)?S.plans.find(x=>x.id===t.planId):null;
+  $("planLink").hidden=!lp;
+  if(lp){
+    $("planLinkName").textContent=(lp.subjectId?subjName(lp.subjectId):"予定")+(lp.text?"・"+lp.text:"");
+    $("planLinkDone").checked=t.completePlan!==false;
+  }
 }
+$("timerMemo").addEventListener("input",()=>{S.timer.memo=$("timerMemo").value;save();});
+$("planLinkDone").addEventListener("change",()=>{S.timer.completePlan=$("planLinkDone").checked;save();});
 function startTick(){if(!tick)tick=setInterval(()=>{if(S.timer.running)renderTimer();},1000);}
 $("btnStart").addEventListener("click",()=>{
   const sid=$("timerSubject").value;
   if(!sid){alert("科目を追加してください（設定タブ）");return;}
   S.timer={running:true,onBreak:false,startTs:Date.now(),accumMs:0,breakStartTs:0,breakMs:0,
-    subjectId:sid,kind:$("timerKind").value||""};
+    subjectId:sid,kind:$("timerKind").value||"",memo:$("timerMemo").value||"",planId:null,completePlan:true};
   save();renderTimer();startTick();
 });
 $("btnBreak").addEventListener("click",()=>{
@@ -878,10 +918,19 @@ $("btnBreak").addEventListener("click",()=>{
 $("btnStop").addEventListener("click",()=>{
   const min=Math.round(studyMs()/60000);
   if(min<1){alert("1分未満のため記録しません。破棄する場合は「破棄」を押してください。");return;}
-  S.sessions.push({id:uid(),date:todayStr(),subjectId:S.timer.subjectId,minutes:min,memo:"",
-    kind:S.timer.kind||"",breakMin:Math.round(restMs()/60000)});
+  const t=S.timer;
+  const rec={id:uid(),date:todayStr(),subjectId:t.subjectId,minutes:min,
+    memo:($("timerMemo").value||t.memo||"").trim(),kind:t.kind||"",breakMin:Math.round(restMs()/60000)};
+  const plan=t.planId?S.plans.find(x=>x.id===t.planId):null;
+  if(plan)rec.planId=plan.id;
+  S.sessions.push(rec);
+  const finish=!!plan&&t.completePlan!==false&&!plan.done;
+  if(finish)plan.done=true;
   S.timer=idleTimer();
+  $("timerMemo").value="";
   save();renderAll();
+  toast(fmtMin(min)+"を記録しました"+(finish?"・予定を完了にしました":""));
+  if(finish&&reviewEligible(plan))openReviewDialog(plan);
 });
 $("btnCancel").addEventListener("click",()=>{
   if(timerElapsedSec()>60&&!confirm("計測中の時間を記録せずに破棄しますか？"))return;
@@ -1077,7 +1126,7 @@ function renderWeek(){
     ?"日付をタップすると、その週の時間割を開きます。"
     :(editMode
       ?"編集モード：コマをタップすると内容・日付・コマを変更できます（削除もここから）。"
-      :"コマをタップで完了✓、長押ししてドラッグすると別の日・コマへ移せます。空きコマの＋から追加。");
+      :"コマをタップすると計測・完了・編集を選べます。長押ししてドラッグすると別の日・コマへ移せます。空きコマの＋から追加。");
   if(wk)renderTimetable();else renderMonth();
 }
 // その日の予定をコマ（行）に割り当てる。slot 未設定の予定は空いている上の行から詰める
@@ -1098,22 +1147,71 @@ function planSlots(plans){
 function planCell(p,s){
   const b=document.createElement("button");
   const tr=p.subjectId?subjTrack(p.subjectId):"";
-  b.className="tcell "+(tr==="cpa"?"cpa":(p.subjectId?"boki":""))+(p.done?" done":"");
+  b.className="tcell "+(tr==="cpa"?"cpa":(p.subjectId?"boki":""))+(p.done?" done":"")+
+    ((S.timer.running&&S.timer.planId===p.id)?" live":"");
   b.innerHTML='<span class="ts">'+(p.done?"✓ ":"")+esc(p.subjectId?subjName(p.subjectId):"予定")+"</span>"+
     (p.kind?'<span class="tk'+((p.reviewOf||p.kind==="復習")?" rev":"")+'">'+esc(p.kind)+"</span>":"")+
     (p.text?'<span class="tx">'+esc(p.text)+"</span>":"")+
     (p.minutes?'<span class="tm">'+p.minutes+"分</span>":"");
-  b.setAttribute("aria-label",(p.subjectId?subjName(p.subjectId):"予定")+(editMode?"：タップで編集":"：タップで完了、長押しで移動"));
+  b.setAttribute("aria-label",(p.subjectId?subjName(p.subjectId):"予定")+(editMode?"：タップで編集":"：タップで計測・完了・編集、長押しで移動"));
   b.addEventListener("click",()=>{
     if(suppressClick)return;
     if(editMode)openPlanEdit(p,s);
-    else{
-      p.done=!p.done;save();renderWeek();
-      if(p.done&&reviewEligible(p))openReviewDialog(p);
-    }
+    else openPlanSheet(p,s);
   });
   attachDrag(b,p,s);
   return b;
+}
+/* ---------- 予定の操作メニュー ---------- */
+let sheetFor=null;
+function showTab(name){document.querySelector('nav.tabs button[data-tab="'+name+'"]').click();}
+function openPlanSheet(p,s){
+  sheetFor={p:p,s:s};
+  const dd=dateOf(p.date);
+  $("sheetTitle").textContent=(p.subjectId?subjName(p.subjectId):"予定")+(p.kind?"・"+p.kind:"");
+  $("sheetSub").textContent=[p.text,p.minutes?p.minutes+"分":""].filter(Boolean).join("・")+
+    "　"+(dd.getMonth()+1)+"/"+dd.getDate()+"（"+"日月火水木金土"[dd.getDay()]+"）"+(s+1)+"限";
+  const live=S.timer.running&&S.timer.planId===p.id;
+  $("sheetTimer").textContent=live?"計測中のタイマーを開く":"▶︎ タイマーで計測";
+  $("sheetDone").textContent=p.done?"完了を取り消す":"✓ 完了にする";
+  $("sheetOverlay").classList.add("on");
+}
+function closePlanSheet(){sheetFor=null;$("sheetOverlay").classList.remove("on");}
+$("sheetClose").addEventListener("click",closePlanSheet);
+$("sheetOverlay").addEventListener("click",e=>{if(e.target===$("sheetOverlay"))closePlanSheet();});
+$("sheetEdit").addEventListener("click",()=>{
+  const x=sheetFor;closePlanSheet();
+  if(x)openPlanEdit(x.p,x.s);
+});
+$("sheetDone").addEventListener("click",()=>{
+  const x=sheetFor;closePlanSheet();
+  if(!x)return;
+  const p=x.p;
+  p.done=!p.done;save();renderAll();
+  if(p.done&&reviewEligible(p))openReviewDialog(p);
+});
+$("sheetTimer").addEventListener("click",()=>{
+  const x=sheetFor;closePlanSheet();
+  if(x)startTimerFromPlan(x.p);
+});
+// 予定の科目・学習タイプ・内容を引き継いでタイマーを開始し、今日タブへ移る
+function startTimerFromPlan(p){
+  const t=S.timer;
+  if(t.running){
+    if(t.planId!==p.id)alert("計測中のタイマーがあります。先に「終了して記録」か「破棄」をしてください。");
+    showTab("home");
+    $("timerCard").scrollIntoView({block:"start"});
+    return;
+  }
+  const sid=p.subjectId||$("timerSubject").value;
+  if(!sid){alert("この予定には科目がありません。編集で科目を設定してから計測してください。");return;}
+  S.timer={running:true,onBreak:false,startTs:Date.now(),accumMs:0,breakStartTs:0,breakMs:0,
+    subjectId:sid,kind:p.kind||"",memo:p.text||"",planId:p.id,completePlan:true};
+  save();
+  showTab("home");
+  startTick();
+  $("timerCard").scrollIntoView({block:"start"});
+  toast("計測を開始しました");
 }
 /* ---------- 復習の自動登録 ---------- */
 const RV_PRESETS=[[1,"翌日"],[3,"3日後"],[7,"1週間後"],[14,"2週間後"],[30,"1か月後"],[60,"2か月後"]];
