@@ -262,6 +262,9 @@ table.tt.editmode .tcell:not(.empty){outline:1px dashed var(--ink-3);outline-off
 .calbar .seg{margin-bottom:0}
 .editbtn{margin-left:auto;min-height:42px;padding:0 18px;border:1px solid var(--border);background:var(--card);border-radius:10px;color:var(--ink-2);cursor:pointer;font-size:14px}
 .editbtn.on{background:var(--amber);border-color:var(--amber);color:#fff;font-weight:600}
+tr.rowctl td{padding:2px 0}
+.rowbtn{min-height:36px;padding:0 14px;margin-right:8px;border:1px dashed var(--border);background:none;border-radius:9px;color:var(--ink-2);font-size:13px;cursor:pointer;font-family:inherit}
+.rowbtn:disabled{opacity:.4;cursor:default}
 .acell{background:var(--border-soft);border-radius:9px;padding:7px 4px;font-size:12px;text-align:center;font-variant-numeric:tabular-nums;color:var(--ink-2)}
 .acell b{color:var(--ink)}
 .acell .dot{display:inline-block;vertical-align:1px;margin-right:2px}
@@ -654,7 +657,7 @@ function defaultState(){
     ],
     kinds:["講義","問題集","朗読","テキスト","復習","模試"],
     settings:{bokiDate:"2026-11-15",cpaDate:"2026-12-13",goalHours:25,
-      review:{enabled:true,kinds:["講義"],days:[3,7,30],minutes:30}},
+      review:{enabled:true,kinds:["講義"],days:[3,7,30],minutes:30},ttRows:4},
     timer:{running:false,onBreak:false,startTs:0,accumMs:0,breakStartTs:0,breakMs:0,subjectId:null,kind:""}
   };
 }
@@ -670,6 +673,7 @@ function normalizeState(st){
   if(typeof st.settings.goalHours!=="number")st.settings.goalHours=d.settings.goalHours;
   if(typeof st.settings.bokiDate!=="string")st.settings.bokiDate=d.settings.bokiDate;
   if(typeof st.settings.cpaDate!=="string")st.settings.cpaDate=d.settings.cpaDate;
+  if(typeof st.settings.ttRows!=="number")st.settings.ttRows=4;
   if(!st.settings.review||typeof st.settings.review!=="object")st.settings.review=d.settings.review;
   else{
     const rv=st.settings.review;
@@ -1417,9 +1421,10 @@ function renderTimetable(){
   const days=[];
   for(let i=0;i<7;i++)days.push(addDays(mon,i));
   const byDay=days.map(d=>planSlots(S.plans.filter(p=>p.date===d)));
-  let rows=4;
-  byDay.forEach(a=>a.forEach(x=>{if(x.s+1>rows)rows=x.s+1;}));
-  rows=Math.min(rows,12);
+  const baseRows=Math.max(4,Math.min(12,S.settings.ttRows||4));
+  let need=0;
+  byDay.forEach(a=>a.forEach(x=>{if(x.s+1>need)need=x.s+1;}));
+  const rows=Math.min(12,Math.max(baseRows,need));
   const tbl=$("ttGrid");tbl.innerHTML="";
   const thead=document.createElement("thead"),hrow=document.createElement("tr");
   const corner=document.createElement("th");corner.className="pcol";hrow.appendChild(corner);
@@ -1445,6 +1450,22 @@ function renderTimetable(){
     });
     tb.appendChild(tr);
   }
+  const cr=document.createElement("tr");cr.className="rowctl";
+  const cth=document.createElement("th");cth.className="pcol";cr.appendChild(cth);
+  const ctd=document.createElement("td");ctd.colSpan=7;
+  const addRow=document.createElement("button");
+  addRow.className="rowbtn";addRow.textContent=rows>=12?"12限まで追加済み":"＋ "+(rows+1)+"限を追加";
+  addRow.disabled=rows>=12;
+  addRow.addEventListener("click",()=>{S.settings.ttRows=rows+1;save();renderWeek();});
+  ctd.appendChild(addRow);
+  // 追加した行だけ減らせる（予定が入っている行は消さない）
+  if(rows>4&&rows>need){
+    const rmRow=document.createElement("button");
+    rmRow.className="rowbtn";rmRow.textContent="－ "+rows+"限を減らす";
+    rmRow.addEventListener("click",()=>{S.settings.ttRows=rows-1;save();renderWeek();});
+    ctd.appendChild(rmRow);
+  }
+  cr.appendChild(ctd);tb.appendChild(cr);
   const ar=document.createElement("tr");
   const ath=document.createElement("th");ath.className="pcol";ath.textContent="実績";
   ar.appendChild(ath);
