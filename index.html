@@ -544,6 +544,7 @@ table.cht td{padding:4px 6px;border-bottom:1px solid var(--border-soft);vertical
     <div class="row-inline" style="margin-top:10px">
       <label class="f" style="max-width:220px"><span>まとめて作成（章の数）</span><input type="number" id="chBulkN" min="1" max="50" placeholder="例：15"></label>
       <button class="btn" id="chBulk">まとめて作成</button>
+      <button class="btn" id="chPreset">標準の論点で作成</button>
     </div>
   </div>
   <div class="card">
@@ -1451,6 +1452,7 @@ function renderChapters(){
   const subs=S.subjects.filter(x=>!x.archived);
   if(!chSubj||!subs.some(x=>x.id===chSubj)){const w=subs.find(x=>chaptersOf(x.id).length)||subs[0];chSubj=w?w.id:null;}
   const chips=$("chSubjChips");chips.innerHTML="";
+  $("chPreset").disabled=!(chSubj&&presetFor(subjName(chSubj)));
   subs.forEach(x=>{
     const n=chaptersOf(x.id).length;
     const b=document.createElement("button");b.type="button";
@@ -1586,6 +1588,114 @@ $("chBulk").addEventListener("click",()=>{
   toast(subjName(chSubj)+"に"+n+"章を追加しました");
 });
 $("addSubject").addEventListener("change",()=>fillChapterSelect($("addChapter"),$("addSubject").value,""));
+
+/* ---------- 章のプリセット（試験範囲に沿った標準的な論点） ---------- */
+const CH_PRESET={
+  "財務会計論":["財務会計の基礎・概念フレームワーク","現金預金","金銭債権・貸倒引当金","有価証券","デリバティブ・ヘッジ会計",
+    "棚卸資産","有形固定資産","無形固定資産・繰延資産","研究開発費・ソフトウェア","リース会計","減損会計","資産除去債務",
+    "引当金","退職給付会計","社債","純資産・株主資本","新株予約権・ストック・オプション","収益認識（基本）",
+    "収益認識（応用・工事契約等）","税効果会計","外貨換算会計","会計上の変更・誤謬の訂正","1株当たり情報","本支店会計",
+    "キャッシュ・フロー計算書","連結会計（資本連結）","連結会計（成果連結）","持分法","連結会計（応用）・包括利益",
+    "企業結合・事業分離","分配可能額","開示（セグメント情報・中間財務諸表等）"],
+  "管理会計論":["原価計算の基礎・原価計算基準","費目別計算（材料費・労務費・経費）","製造間接費の配賦","部門別計算",
+    "個別原価計算","総合原価計算（基礎）","総合原価計算（仕損・減損）","組別・等級別・連産品","標準原価計算",
+    "原価差異の分析・会計処理","直接原価計算","CVP分析","予算管理・予算実績差異分析","業務的意思決定（差額原価収益分析）",
+    "設備投資の意思決定","分権組織と業績評価","活動基準原価計算（ABC・ABM）","原価企画・原価維持・原価改善",
+    "品質原価計算・ライフサイクル・コスティング","バランスト・スコアカード","在庫管理（EOQ）・線形計画法","管理会計の基礎・理論"],
+  "監査論":["監査の意義・財務諸表監査の機能","監査制度（金融商品取引法・会社法監査）","公認会計士法・監査人の責任",
+    "職業倫理・独立性","監査基準の体系","品質管理","リスク・アプローチ","監査計画・重要性","内部統制の理解",
+    "監査証拠・監査手続","監査サンプリング・分析的手続","不正・誤謬・違法行為","会計上の見積りの監査",
+    "他の監査人・専門家・内部監査の利用","継続企業の前提","経営者確認書・後発事象","監査役等とのコミュニケーション",
+    "監査報告（意見の種類・KAM）","その他の記載内容・追記情報","内部統制監査","期中レビュー（中間・四半期）","保証業務・その他の監査"],
+  "企業法":["会社法総論・会社の種類","設立","株式（総論・株主の権利）","株式の譲渡・自己株式","株式の併合・分割・単元株",
+    "機関総論・株主総会","取締役・取締役会・代表取締役","監査役・監査役会・会計参与","会計監査人",
+    "指名委員会等設置会社・監査等委員会設置会社","役員等の責任・株主代表訴訟","計算（計算書類・剰余金の配当）",
+    "募集株式の発行","新株予約権","社債","組織再編（合併）","組織再編（会社分割）","株式交換・株式移転・株式交付",
+    "事業譲渡・定款変更・解散清算","持分会社","商法総則・商行為","金融商品取引法（開示規制）","金融商品取引法（不公正取引）"],
+  "租税法":["租税法総論","法人税法 総論・所得の計算構造","益金（受取配当等の益金不算入など）",
+    "損金（売上原価・役員給与・寄附金・交際費）","減価償却・繰延資産","資産の評価・圧縮記帳","引当金・貸倒損失",
+    "有価証券・外貨建取引","欠損金・税額計算（所得税額控除等）","グループ法人税制・組織再編税制","グループ通算制度",
+    "法人税 総合問題","所得税法 総論・納税義務者","各種所得（利子・配当・不動産・事業）",
+    "各種所得（給与・退職・譲渡・一時・雑）","損益通算・純損失の繰越","所得控除","所得税の税額計算・申告",
+    "消費税法 総論・課税対象","非課税・免税・納税義務者","仕入税額控除","簡易課税・申告"],
+  "経営学":["経営戦略","組織構造","モチベーション・リーダーシップ","組織行動・組織文化","イノベーション・技術経営",
+    "財務管理の基礎・貨幣の時間価値","投資決定（NPV・IRR）","ポートフォリオ理論・CAPM","資本構成（MM理論）","配当政策",
+    "企業価値評価","デリバティブ（オプション・先物）","効率的市場・行動ファイナンス"],
+  "商業簿記":["簿記一巡・財務諸表","現金預金・金銭債権","有価証券","デリバティブ","棚卸資産","有形固定資産・リース",
+    "減損・資産除去債務","無形固定資産・ソフトウェア","引当金・退職給付","社債・純資産","収益認識","税効果会計",
+    "外貨換算","本支店会計","連結会計・持分法","企業結合・事業分離"],
+  "会計学":["会計の基礎概念・概念フレームワーク","資産会計","負債会計","純資産会計","損益会計・収益認識","金融商品会計",
+    "リース・減損・退職給付","税効果会計","外貨換算","連結財務諸表","企業結合","キャッシュ・フロー計算書・開示"],
+  "工業簿記":["工業簿記の基礎・勘定連絡","費目別計算","部門別計算","個別原価計算","総合原価計算","組別・等級別・連産品",
+    "標準原価計算","直接原価計算","本社工場会計","原価差異の会計処理"],
+  "原価計算":["CVP分析","予算実績差異分析","業務的意思決定","設備投資の意思決定","事業部の業績評価","活動基準原価計算",
+    "品質原価計算・原価企画","標準原価の差異分析","最適セールス・ミックス（線形計画法）","在庫管理（EOQ）"]
+};
+function presetFor(name){
+  if(!name)return null;
+  if(CH_PRESET[name])return CH_PRESET[name];
+  for(const k in CH_PRESET){if(name.indexOf(k)>=0)return CH_PRESET[k];}
+  return null;
+}
+// onlyId なし：章が1つもない科目にだけ追加（自動）／ onlyId あり：その科目に、同じ名前の章がなければ追加
+function applyChapterPreset(onlyId){
+  let n=0;
+  S.subjects.forEach(sb=>{
+    if(sb.archived||(onlyId&&sb.id!==onlyId))return;
+    const list=presetFor(sb.name);
+    if(!list)return;
+    const have=chaptersOf(sb.id);
+    if(!onlyId&&have.length)return;
+    const names={};have.forEach(c=>{names[c.name]=1;});
+    list.forEach((topic,i)=>{
+      const nm="第"+(i+1)+"章 "+topic;
+      if(names[nm])return;
+      S.chapters.push({id:uid()+sb.id+i,subjectId:sb.id,name:nm,marks:[]});
+      n++;
+    });
+  });
+  return n;
+}
+$("chPreset").addEventListener("click",()=>{
+  if(!chSubj||!presetFor(subjName(chSubj)))return;
+  if(!confirm(subjName(chSubj)+"に標準的な論点の章を追加します。同じ名前の章がすでにあれば追加しません。"))return;
+  const n=applyChapterPreset(chSubj);
+  save();renderAll();
+  toast(n?subjName(chSubj)+"に"+n+"章を追加しました":"追加する章はありませんでした");
+});
+// 過去の記録の補正：日付をまたいだタイマーの記録を「開始した日」に直す。
+// 以前のタイマーは終了した日で記録していた。記録IDの先頭は終了時刻なので、そこから開始日を逆算する。
+// 対象は休憩時間を持つ記録（＝タイマーで記録したもの）だけ。手入力の記録は対象外。
+function fixMidnightRecords(){
+  let n=0;
+  S.sessions.forEach(x=>{
+    if(typeof x.breakMin!=="number"||x.dateFixedFrom)return;
+    const endTs=parseInt(String(x.id).slice(0,8),36);
+    if(!(endTs>1.5e12&&endTs<4e12))return;
+    if(x.date!==dateStrOf(endTs))return;
+    const start=dateStrOf(endTs-((x.minutes||0)+(x.breakMin||0))*60000);
+    if(start<x.date){x.dateFixedFrom=x.date;x.date=start;n++;}
+  });
+  return n;
+}
+// 一度だけ実行するデータ補正（実行前にバックアップを取る）
+function runOneTimeFixes(){
+  const msgs=[];
+  if(S.fixMidnightV1&&S.presetChaptersV1)return msgs;
+  autoBackupNow();
+  if(!S.fixMidnightV1){
+    const n=fixMidnightRecords();
+    S.fixMidnightV1=todayStr();
+    if(n)msgs.push("日付をまたいだ記録"+n+"件を、開始した日に直しました");
+  }
+  if(!S.presetChaptersV1){
+    const n=applyChapterPreset(null);
+    S.presetChaptersV1=todayStr();
+    if(n)msgs.push("科目ごとの章（標準的な論点）を"+n+"件登録しました");
+  }
+  save();
+  return msgs;
+}
 
 /* ---------- 合格目安時間 ---------- */
 function trackMinutes(tr){return S.sessions.reduce((a,x)=>a+(subjTrack(x.subjectId)===tr?x.minutes:0),0);}
@@ -2912,7 +3022,9 @@ function renderAll(){
   renderWeekChart();renderSubjChart();renderKindChart();renderConf();renderBackupInfo();renderReviewConf();
   if(S.timer.running){$("timerSubject").value=S.timer.subjectId;startTick();}
 }
+const fixMsgs=runOneTimeFixes();
 renderAll();
+fixMsgs.forEach(m=>toast(m));
 // re-render chart colors when theme flips
 const mq=window.matchMedia("(prefers-color-scheme: dark)");
 const reChart=()=>{renderWeekChart();renderTrendChart();};
