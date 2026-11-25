@@ -231,7 +231,7 @@ table.tt td{vertical-align:top;padding:0}
 .tcell .tm{display:block;font-size:10px;color:var(--ink-3);font-variant-numeric:tabular-nums;margin-top:4px}
 .tcell .tk{display:inline-block;font-size:10px;line-height:1.6;padding:0 6px;border-radius:5px;background:var(--card);border:1px solid var(--border);color:var(--ink-2);margin-top:3px}
 .tcell .tk.rev{background:var(--amber-soft);color:var(--amber);border-color:transparent;font-weight:600}
-.tcell.done{opacity:.55}
+.tcell.done{opacity:1}
 /* 復習の登録ダイアログ */
 .rvlist{display:flex;flex-direction:column;gap:8px}
 .rvrow{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;cursor:pointer;font-variant-numeric:tabular-nums;transition:opacity .15s}
@@ -253,7 +253,13 @@ table.tt td{vertical-align:top;padding:0}
 .sheet-acts .btn{width:100%}
 .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,16px);background:var(--ink);color:var(--ground);padding:11px 18px;border-radius:12px;font-size:14px;z-index:90;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:calc(100% - 32px);box-shadow:var(--shadow-lg)}
 .toast.on{opacity:1;transform:translate(-50%,0)}
-.tcell.done .ts{text-decoration:line-through}
+.tcell.done .ts{text-decoration:none}
+.tcell.done .tx,.tcell.done .tm{color:var(--ink-2)}
+.tcell.done .tx{padding-right:30px}
+.tcell .stamp{position:absolute;right:6px;bottom:6px;width:28px;height:28px;border-radius:50%;border:2px solid var(--danger);color:var(--danger);background:var(--card);font-size:13px;font-weight:700;line-height:1;display:flex;align-items:center;justify-content:center;transform:rotate(-10deg);font-family:var(--serif)}
+table.tt thead th .hd-done{display:block;font-size:10px;font-weight:600;color:var(--ink-3);margin-top:1px;font-variant-numeric:tabular-nums}
+table.tt thead th .hd-done.all{color:var(--danger)}
+table.tt thead th.today .hd-done{color:#fff;opacity:.9}
 .tcell.dragsrc{opacity:.3}
 .drag-ghost{position:fixed;z-index:80;pointer-events:none;transform:translate(-50%,-50%);box-shadow:var(--shadow-lg);opacity:.95}
 table.tt td.drop .tcell{border-color:var(--boki);box-shadow:0 0 0 2px var(--boki);background:var(--boki-soft)}
@@ -280,7 +286,7 @@ tr.rowctl td{padding:2px 0}
 .mday .ma{font-size:11px;color:var(--boki);font-weight:600;font-variant-numeric:tabular-nums}
 .mchip{font-size:10px;padding:2px 5px;border-radius:5px;background:var(--boki-soft);color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mchip.cpa{background:var(--cpa-soft)}
-.mchip.done{opacity:.5;text-decoration:line-through}
+.mchip.done{opacity:1;text-decoration:none;color:var(--ink-3)}
 .mmore{font-size:10px;color:var(--ink-3)}
 /* bulk import drafts */
 textarea{font:inherit;background:var(--card);color:inherit;border:1px solid var(--border);border-radius:10px;padding:10px;width:100%;box-sizing:border-box}
@@ -322,7 +328,8 @@ hr.soft{border:none;border-top:1px solid var(--border-soft);margin:18px 0}
 .tp-row .tp-main{flex:1;min-width:0}
 .tp-row .tp-main b{display:block;font-size:14px}
 .tp-row .tp-main small{display:block;color:var(--ink-3);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tp-row.done .tp-main b{text-decoration:line-through;color:var(--ink-3)}
+.tp-row.done .tp-main b{text-decoration:none;color:var(--ink-2)}
+.donebadge{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--danger);color:var(--danger);font-size:11px;font-weight:700;margin-left:6px;vertical-align:1px;font-family:var(--serif)}
 .tp-btn{min-height:38px;min-width:44px;padding:0 12px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--ink-2);cursor:pointer;font-size:14px;font-family:inherit;flex:none}
 .tp-btn.go{background:var(--boki);border-color:var(--boki);color:#fff;font-weight:600}
 .tp-sec{font-size:12px;color:var(--ink-3);letter-spacing:.08em;margin:12px 0 0}
@@ -1396,11 +1403,12 @@ function planCell(p,s){
   const b=document.createElement("button");
   b.className="tcell "+(p.subjectId?subjCls(p.subjectId):"")+(p.done?" done":"")+
     ((S.timer.running&&S.timer.planId===p.id)?" live":"");
-  b.innerHTML='<span class="ts">'+(p.done?"✓ ":"")+esc(p.subjectId?subjName(p.subjectId):"予定")+"</span>"+
+  b.innerHTML=(p.done?'<span class="stamp" aria-hidden="true">済</span>':"")+
+    '<span class="ts">'+esc(p.subjectId?subjName(p.subjectId):"予定")+"</span>"+
     (p.kind?'<span class="tk'+((p.reviewOf||p.kind==="復習")?" rev":"")+'">'+esc(p.kind)+"</span>":"")+
     ((chapterName(p.chapterId)||p.text)?'<span class="tx">'+esc([chapterName(p.chapterId),p.text].filter(Boolean).join("・"))+"</span>":"")+
     (p.minutes?'<span class="tm">'+p.minutes+"分</span>":"");
-  b.setAttribute("aria-label",(p.subjectId?subjName(p.subjectId):"予定")+(editMode?"：タップで編集":"：タップで計測・完了・編集、長押しで移動"));
+  b.setAttribute("aria-label",(p.subjectId?subjName(p.subjectId):"予定")+(p.done?"（完了）":"")+(editMode?"：タップで編集":"：タップで計測・完了・編集、長押しで移動"));
   b.addEventListener("click",()=>{
     if(suppressClick)return;
     if(editMode)openPlanEdit(p,s);
@@ -2054,7 +2062,8 @@ function tpRow(p,s,isLate){
   const sub=[isLate?mdOf(p.date)+"の予定":(s+1)+"限",p.kind,chapterName(p.chapterId),p.text,p.minutes?p.minutes+"分":""]
     .filter(Boolean).join("・");
   row.innerHTML='<span class="dot '+(p.subjectId?subjCls(p.subjectId):"")+'"></span><div class="tp-main"><b>'+
-    esc(p.subjectId?subjName(p.subjectId):"予定")+"</b><small>"+esc(sub)+"</small></div>";
+    esc(p.subjectId?subjName(p.subjectId):"予定")+(p.done?'<span class="donebadge" aria-label="完了">済</span>':"")+
+    "</b><small>"+esc(sub)+"</small></div>";
   if(!p.done){
     const go=document.createElement("button");go.type="button";go.className="tp-btn go";
     go.textContent=live?"計測中":"開始";
@@ -2344,10 +2353,12 @@ function renderTimetable(){
   const tbl=$("ttGrid");tbl.innerHTML="";
   const thead=document.createElement("thead"),hrow=document.createElement("tr");
   const corner=document.createElement("th");corner.className="pcol";hrow.appendChild(corner);
-  days.forEach(d=>{
+  days.forEach((d,di)=>{
     const dd=dateOf(d),th=document.createElement("th");
     th.className=(d===today?"today":"")+(dd.getDay()===0?" sun":"");
-    th.innerHTML="日月火水木金土"[dd.getDay()]+"<b>"+(dd.getMonth()+1)+"/"+dd.getDate()+"</b>";
+    const dn=byDay[di].length,dd2=byDay[di].filter(x=>x.p.done).length;
+    th.innerHTML="日月火水木金土"[dd.getDay()]+"<b>"+(dd.getMonth()+1)+"/"+dd.getDate()+"</b>"+
+      (dn?'<span class="hd-done'+(dd2===dn?" all":"")+'">'+(dd2===dn?"全部済":"済 "+dd2+"/"+dn)+"</span>":"");
     hrow.appendChild(th);
   });
   thead.appendChild(hrow);tbl.appendChild(thead);
@@ -2405,7 +2416,7 @@ function renderTimetable(){
   byDay.forEach(a=>a.forEach(x=>{wkPlan+=x.p.minutes||0;planN++;if(x.p.done)planDone++;}));
   $("wkActual").textContent=fmtMin(wkAct)||"0分";
   $("wkPlanned").textContent=wkPlan?fmtMin(wkPlan):(planN?planN+"件":"0件");
-  $("wkDoneRate").textContent=planN?("消化 "+planDone+"/"+planN+"件"):"";
+  $("wkDoneRate").textContent=planN?("消化 "+planDone+"/"+planN+"件（"+Math.round(planDone/planN*100)+"%）"):"";
 }
 function renderMonth(){
   const today=todayStr(),now=new Date();
@@ -2437,7 +2448,7 @@ function renderMonth(){
     if(m)html+='<span class="ma">'+fmtMin(m)+"</span>";
     plans.slice(0,2).forEach(p=>{
       html+='<span class="mchip '+(p.subjectId?subjCls(p.subjectId):"")+(p.done?" done":"")+'">'+
-        esc(p.subjectId?subjName(p.subjectId):(p.text||"予定"))+"</span>";
+        (p.done?"✓ ":"")+esc(p.subjectId?subjName(p.subjectId):(p.text||"予定"))+"</span>";
     });
     if(plans.length>2)html+='<span class="mmore">ほか'+(plans.length-2)+"件</span>";
     cell.innerHTML=html;
