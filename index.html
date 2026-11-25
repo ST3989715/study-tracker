@@ -62,6 +62,7 @@
   --veil:rgba(245,247,246,.82);
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{margin:0;padding:0}
 body{background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6;-webkit-text-size-adjust:100%}
 button,input,select,textarea{font-family:inherit;font-size:16px;color:inherit}
@@ -304,6 +305,74 @@ textarea{font:inherit;background:var(--card);color:inherit;border:1px solid var(
 .empty{color:var(--ink-3);text-align:center;padding:26px 0;font-size:14px}
 hr.soft{border:none;border-top:1px solid var(--border-soft);margin:18px 0}
 @media (prefers-reduced-motion: reduce){*{transition:none !important}}
+/* 科目カラー（.scN の --sc / --scs は JS で定義） */
+.tcell.sc{background:var(--scs);border-color:transparent;border-left:3px solid var(--sc)}
+.mchip.sc{background:var(--scs);box-shadow:inset 3px 0 0 var(--sc)}
+.dot.sc{background:var(--sc)}
+.hrow.sc .bar i{background:var(--sc)}
+.swatch{width:24px;height:24px;border-radius:50%;background:var(--sc);border:2px solid var(--card);box-shadow:0 0 0 1px var(--border);cursor:pointer;flex:none;padding:0}
+.swatch.on{box-shadow:0 0 0 2px var(--ink)}
+.palette{display:flex;flex-wrap:wrap;gap:10px;padding:10px 0 4px 34px;flex-basis:100%;order:9}
+/* ひとこと・今日の予定 */
+.cheer{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 16px;margin-bottom:16px;box-shadow:var(--shadow);font-size:14px;color:var(--ink-2);display:flex;gap:12px;align-items:stretch;line-height:1.7}
+.cheer b{color:var(--ink)}
+.cheer .cm{width:4px;border-radius:2px;background:var(--amber);flex:none}
+.tp-row{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--border-soft)}
+.tp-row:last-child{border-bottom:0}
+.tp-row .tp-main{flex:1;min-width:0}
+.tp-row .tp-main b{display:block;font-size:14px}
+.tp-row .tp-main small{display:block;color:var(--ink-3);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tp-row.done .tp-main b{text-decoration:line-through;color:var(--ink-3)}
+.tp-btn{min-height:38px;min-width:44px;padding:0 12px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--ink-2);cursor:pointer;font-size:14px;font-family:inherit;flex:none}
+.tp-btn.go{background:var(--boki);border-color:var(--boki);color:#fff;font-weight:600}
+.tp-sec{font-size:12px;color:var(--ink-3);letter-spacing:.08em;margin:12px 0 0}
+.tp-sec.late{color:var(--danger)}
+/* 合格目安時間 */
+.goalhrs{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:640px){.goalhrs{grid-template-columns:1fr}}
+.gh .gh-k{font-size:12px;color:var(--ink-2);letter-spacing:.06em}
+.gh .gh-v{font-size:28px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.3}
+.gh .gh-v small{font-size:13px;font-weight:400;color:var(--ink-2)}
+.gh .gh-bar{height:12px;border-radius:6px;background:var(--border-soft);overflow:hidden;margin:8px 0 8px}
+.gh .gh-bar i{display:block;height:100%;border-radius:6px;background:var(--cpa)}
+.gh.boki .gh-bar i{background:var(--boki)}
+.gh .gh-note{font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums;line-height:1.8}
+.gh .gh-note b{color:var(--ink)}
+.count .hrs{font-size:12px;color:var(--ink-2);margin-top:7px;font-variant-numeric:tabular-nums}
+.count .hrs b{color:var(--ink)}
+/* 章の進捗 */
+.subjchips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.subjchip{display:inline-flex;align-items:center;gap:6px;min-height:38px;padding:0 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--ink-2);cursor:pointer;font-size:14px;font-family:inherit}
+.subjchip.on{border-color:var(--sc);box-shadow:inset 0 0 0 1px var(--sc);color:var(--ink);font-weight:600;background:var(--scs)}
+.chsum{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 0 14px}
+@media(max-width:520px){.chsum{grid-template-columns:1fr}}
+.chsum .cs{background:var(--ground);border-radius:12px;padding:10px 12px}
+.chsum .cs .k{font-size:11px;color:var(--ink-2);letter-spacing:.08em}
+.chsum .cs .v{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
+.chsum .cs .v small{font-size:12px;font-weight:400;color:var(--ink-2)}
+.chsum .cs .b{height:6px;border-radius:3px;background:var(--border-soft);overflow:hidden;margin-top:6px}
+.chsum .cs .b i{display:block;height:100%;background:var(--sc)}
+table.cht{width:100%;border-collapse:collapse;min-width:560px;font-size:13px}
+table.cht th{font-size:11px;color:var(--ink-3);font-weight:400;text-align:left;padding:6px;border-bottom:1px solid var(--border);letter-spacing:.06em}
+table.cht td{padding:4px 6px;border-bottom:1px solid var(--border-soft);vertical-align:middle;font-variant-numeric:tabular-nums;color:var(--ink-2)}
+.chname{border:none;background:none;font:inherit;font-weight:600;color:var(--ink);cursor:pointer;padding:8px 0;text-align:left}
+.chc{display:inline-flex;flex-direction:column;align-items:flex-start;justify-content:center;min-height:42px;min-width:72px;padding:4px 9px;border-radius:9px;border:1px dashed var(--border);background:none;cursor:pointer;font-family:inherit;color:var(--ink-3);font-size:12px;line-height:1.3;text-align:left}
+.chc.on{border:1px solid transparent;background:var(--scs);color:var(--ink);box-shadow:inset 3px 0 0 var(--sc)}
+.chc small{font-size:10px;color:var(--ink-2)}
+.chlog{display:flex;flex-direction:column;gap:6px;margin:4px 0 12px;max-height:240px;overflow:auto}
+.chlog .cl{display:flex;align-items:center;gap:8px;font-size:13px;padding:7px 10px;border-radius:9px;background:var(--ground);font-variant-numeric:tabular-nums}
+.chlog .cl span{color:var(--ink-3);font-size:11px;margin-left:auto}
+.chlog .cl button{border:none;background:none;color:var(--ink-3);font-size:17px;cursor:pointer;padding:0 4px;line-height:1}
+/* バッジ */
+.badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:14px 10px}
+.bdg{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.bdg .md{width:58px;height:58px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;font-variant-numeric:tabular-nums;background:var(--border-soft);color:var(--ink-3);border:2px dashed var(--border)}
+.bdg.on .md{background:var(--amber);color:#fff;border:2px solid var(--card);box-shadow:0 0 0 2px var(--amber)}
+.bdg .bn{font-size:11px;color:var(--ink-2);line-height:1.35}
+.bdg.on .bn{color:var(--ink);font-weight:600}
+.bdg .bp{font-size:10px;color:var(--ink-3)}
+.bdg-sum{font-size:13px;color:var(--ink-2);margin:-4px 0 14px}
+@media(max-width:440px){nav.tabs{gap:3px}nav.tabs button{font-size:13px;padding:0}}
 </style>
 
 <div class="wrap">
@@ -319,6 +388,7 @@ hr.soft{border:none;border-top:1px solid var(--border-soft);margin:18px 0}
   <button data-tab="home" class="on">今日</button>
   <button data-tab="week">週間</button>
   <button data-tab="log">記録</button>
+  <button data-tab="prog">進捗</button>
   <button data-tab="stats">統計</button>
   <button data-tab="conf">設定</button>
 </nav>
@@ -330,17 +400,22 @@ hr.soft{border:none;border-top:1px solid var(--border-soft);margin:18px 0}
     <div class="count">
       <div class="label">日商簿記 1級</div><div class="days" id="bokiDays"></div>
       <div class="when" id="bokiWhen"></div><div class="prog"><i id="bokiProg" style="width:0%"></i></div>
+      <div class="hrs" id="bokiHrs"></div>
     </div>
     <div class="count cpa">
       <div class="label">公認会計士 短答式</div><div class="days" id="cpaDays"></div>
       <div class="when" id="cpaWhen"></div><div class="prog"><i id="cpaProg" style="width:0%"></i></div>
+      <div class="hrs" id="cpaHrs"></div>
     </div>
   </div>
+
+  <div class="cheer" role="status"><span class="cm"></span><div id="cheerTxt"></div></div>
 
   <div class="card timer-card" id="timerCard">
     <h2>タイマー<span class="note" id="timerGoalNote"></span></h2>
     <div class="form-grid">
       <label class="f"><span>科目</span><select id="timerSubject"></select></label>
+      <label class="f"><span>章（任意）</span><select id="timerChapter"></select></label>
       <label class="f"><span>学習タイプ（任意）</span><select id="timerKind"></select></label>
     </div>
     <label class="f"><span>勉強の内容（任意・計測中も書けます）</span><input type="text" id="timerMemo" placeholder="例：連結会計 テキストP.120〜135"></label>
@@ -365,6 +440,11 @@ hr.soft{border:none;border-top:1px solid var(--border-soft);margin:18px 0}
       <button class="btn stop" id="btnStop" disabled>終了して記録</button>
       <button class="btn ghost" id="btnCancel" disabled>破棄</button>
     </div>
+  </div>
+
+  <div class="card">
+    <h2>今日の予定<span class="note" id="tpNote"></span></h2>
+    <div id="tpList"></div>
   </div>
 
   <div class="grid2">
@@ -431,6 +511,7 @@ hr.soft{border:none;border-top:1px solid var(--border-soft);margin:18px 0}
     <div class="form-grid">
       <label class="f"><span>日付</span><input type="date" id="addDate"></label>
       <label class="f"><span>科目</span><select id="addSubject"></select></label>
+      <label class="f"><span>章（任意）</span><select id="addChapter"></select></label>
       <label class="f"><span>時間（分）</span><input type="number" id="addMin" min="1" max="960" value="60"></label>
     </div>
     <div style="margin-bottom:12px">
@@ -441,6 +522,35 @@ hr.soft{border:none;border-top:1px solid var(--border-soft);margin:18px 0}
     <button class="btn primary" id="btnAdd">追加</button>
   </div>
   <div id="logList"></div>
+</section>
+
+<!-- ============ 進捗 ============ -->
+<section class="tab" id="tab-prog">
+  <div class="card">
+    <h2>合格目安時間との比較<span class="note">目安は設定タブで変更</span></h2>
+    <div class="goalhrs" id="goalHrs"></div>
+  </div>
+  <div class="card">
+    <h2>章ごとの進み具合</h2>
+    <div class="subjchips" id="chSubjChips"></div>
+    <div id="chSummary"></div>
+    <div class="cal-scroll"><table class="cht" id="chTable"></table></div>
+    <p class="muted" style="margin:10px 0 0">マスをタップすると、その章の講義・問題集・復習を記録できます。タイマー・記録・予定で章を選ぶと自動で反映されます。章の名前をタップすると名前の変更や削除ができます。</p>
+    <hr class="soft">
+    <div class="row-inline">
+      <label class="f"><span>章を追加</span><input type="text" id="chNewName" placeholder="例：第1章 現金預金"></label>
+      <button class="btn" id="chAdd">追加</button>
+    </div>
+    <div class="row-inline" style="margin-top:10px">
+      <label class="f" style="max-width:220px"><span>まとめて作成（章の数）</span><input type="number" id="chBulkN" min="1" max="50" placeholder="例：15"></label>
+      <button class="btn" id="chBulk">まとめて作成</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>バッジ</h2>
+    <div class="bdg-sum" id="bdgSum"></div>
+    <div class="badges" id="badgeGrid"></div>
+  </div>
 </section>
 
 <!-- ============ 統計 ============ -->
@@ -519,6 +629,19 @@ hr.soft{border:none;border-top:1px solid var(--border-soft);margin:18px 0}
     <label class="f" style="max-width:200px"><span>1週間の目標時間（時間）</span><input type="number" id="cfgGoal" min="1" max="120"></label>
   </div>
   <div class="card">
+    <h2>合格目安時間</h2>
+    <p class="muted">一般に、公認会計士は3,000〜5,000時間、簿記1級は500〜1,000時間ほどが合格までの目安と言われます。ご自身の計画に合わせて変えてください。</p>
+    <div class="form-grid">
+      <label class="f"><span>公認会計士（時間）</span><input type="number" id="tgCpa" min="1" max="20000"></label>
+      <label class="f"><span>簿記1級（時間）</span><input type="number" id="tgBoki" min="1" max="10000"></label>
+    </div>
+    <div class="form-grid">
+      <label class="f"><span>アプリ導入前の会計士の学習時間</span><input type="number" id="tgPriorCpa" min="0" max="20000"></label>
+      <label class="f"><span>アプリ導入前の簿記1級の学習時間</span><input type="number" id="tgPriorBoki" min="0" max="10000"></label>
+    </div>
+    <label class="rvtoggle"><input type="checkbox" id="tgIncBoki"> 簿記1級の学習時間も会計士の累計に含める</label>
+  </div>
+  <div class="card">
     <h2>科目</h2>
     <ul class="plain" id="subjList"></ul>
     <hr class="soft">
@@ -583,6 +706,32 @@ hr.soft{border:none;border-top:1px solid var(--border-soft);margin:18px 0}
 <div class="tooltip" id="tooltip"></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+<div class="overlay" id="chRenameOverlay">
+  <div class="modal">
+    <h2>章の名前を変更</h2>
+    <div class="mdate" id="chRenameSub"></div>
+    <label class="f"><span>章の名前</span><input type="text" id="chRenameInput"></label>
+    <div class="timer-ctl" style="justify-content:flex-end;margin-top:4px">
+      <button class="btn ghost danger-txt" id="chRenameDel">この章を削除</button>
+      <button class="btn ghost" id="chRenameCancel">キャンセル</button>
+      <button class="btn primary" id="chRenameSave">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="chOverlay">
+  <div class="modal">
+    <h2 id="chTitle"></h2>
+    <div class="mdate" id="chSub"></div>
+    <div class="chlog" id="chLog"></div>
+    <label class="f" style="max-width:200px"><span>日付</span><input type="date" id="chDate"></label>
+    <div class="timer-ctl" style="justify-content:flex-end;margin-top:4px">
+      <button class="btn ghost" id="chClose">閉じる</button>
+      <button class="btn primary" id="chMark">この日に済みにする</button>
+    </div>
+  </div>
+</div>
+
 <div class="overlay" id="sheetOverlay">
   <div class="modal">
     <h2 id="sheetTitle"></h2>
@@ -619,6 +768,7 @@ hr.soft{border:none;border-top:1px solid var(--border-soft);margin:18px 0}
     </div>
     <div class="form-grid">
       <label class="f"><span>科目</span><select id="planSubject"></select></label>
+      <label class="f"><span>章（任意）</span><select id="planChapter"></select></label>
       <label class="f"><span>学習タイプ（任意）</span><select id="planKind"></select></label>
     </div>
     <label class="f" style="max-width:140px"><span>予定時間（分・任意）</span><input type="number" id="planMin" min="0" max="960" placeholder="60"></label>
@@ -657,14 +807,15 @@ function defaultState(){
     ],
     kinds:["講義","問題集","朗読","テキスト","復習","模試"],
     settings:{bokiDate:"2026-11-15",cpaDate:"2026-12-13",goalHours:25,
-      review:{enabled:true,kinds:["講義"],days:[3,7,30],minutes:30},ttRows:4},
+      review:{enabled:true,kinds:["講義"],days:[3,7,30],minutes:30},ttRows:4,
+      targets:{cpa:3500,boki:800,includeBoki:true,priorCpa:0,priorBoki:0}},
     timer:{running:false,onBreak:false,startTs:0,accumMs:0,breakStartTs:0,breakMs:0,subjectId:null,kind:""}
   };
 }
 // 保存済みデータは決して捨てない。欠けている項目だけを既定値で補う
 function normalizeState(st){
   const d=defaultState();
-  if(!st||typeof st!=="object")return d;
+  if(!st||typeof st!=="object")st=d;
   if(!Array.isArray(st.sessions))st.sessions=[];
   if(!Array.isArray(st.plans))st.plans=[];
   if(!Array.isArray(st.subjects)||!st.subjects.length)st.subjects=d.subjects;
@@ -674,6 +825,23 @@ function normalizeState(st){
   if(typeof st.settings.bokiDate!=="string")st.settings.bokiDate=d.settings.bokiDate;
   if(typeof st.settings.cpaDate!=="string")st.settings.cpaDate=d.settings.cpaDate;
   if(typeof st.settings.ttRows!=="number")st.settings.ttRows=4;
+  if(!st.settings.targets||typeof st.settings.targets!=="object")st.settings.targets=d.settings.targets;
+  else{
+    const tg=st.settings.targets,dt=d.settings.targets;
+    ["cpa","boki","priorCpa","priorBoki"].forEach(k=>{if(typeof tg[k]!=="number")tg[k]=dt[k];});
+    if(typeof tg.includeBoki!=="boolean")tg.includeBoki=dt.includeBoki;
+  }
+  if(!Array.isArray(st.chapters))st.chapters=[];
+  if(!st.badges||typeof st.badges!=="object"){st.badges={};st.badgesSilent=true;}
+  // 科目の色：未設定の科目には空いている色を順に割り当てる
+  const usedC={};
+  st.subjects.forEach(x=>{if(typeof x.color==="number")usedC[x.color]=1;});
+  st.subjects.forEach(x=>{
+    if(typeof x.color==="number")return;
+    let c=0;
+    while(usedC[c]&&c<9)c++;
+    x.color=c;usedC[c]=1;
+  });
   if(!st.settings.review||typeof st.settings.review!=="object")st.settings.review=d.settings.review;
   else{
     const rv=st.settings.review;
@@ -694,6 +862,10 @@ function normalizeState(st){
   if(typeof st.timer.memo!=="string")st.timer.memo="";
   if(typeof st.timer.planId!=="string")st.timer.planId=null;
   if(typeof st.timer.completePlan!=="boolean")st.timer.completePlan=true;
+  if(typeof st.timer.chapterId!=="string")st.timer.chapterId="";
+  // 計測を開始した時刻（記録の日付は開始日にする）
+  if(typeof st.timer.startedAt!=="number")
+    st.timer.startedAt=st.timer.running?(st.timer.startTs||(Date.now()-(st.timer.accumMs||0))):0;
   return st;
 }
 const BPREFIX=KEY+"__bk_";
@@ -803,10 +975,16 @@ function renderCountdown(){
   };
   one(S.settings.bokiDate,"bokiDays","bokiWhen","bokiProg");
   one(S.settings.cpaDate,"cpaDays","cpaWhen","cpaProg");
+  const et=examTotals(),tg=S.settings.targets;
+  const hl=(min,target)=>"累計 <b>"+fmtHrs(min)+"</b> ／ 目安 "+target.toLocaleString()+"h（"+
+    (target>0?Math.min(100,min/60/target*100).toFixed(1):"0")+"%）";
+  $("bokiHrs").innerHTML=hl(et.boki,tg.boki);
+  $("cpaHrs").innerHTML=hl(et.cpa,tg.cpa);
 }
 
 /* ---------- subject selects ---------- */
 function fillSubjectSelect(sel,withNone){
+  const keep=sel.value;
   sel.innerHTML="";
   if(withNone){
     const o=document.createElement("option");o.value="";o.textContent="（科目を指定しない）";sel.appendChild(o);
@@ -819,6 +997,7 @@ function fillSubjectSelect(sel,withNone){
     });
     if(g.children.length)sel.appendChild(g);
   }
+  if(keep&&[...sel.options].some(o=>o.value===keep))sel.value=keep;
 }
 
 /* ---------- kinds (学習タイプ) ---------- */
@@ -847,7 +1026,12 @@ function fillKindSelect(sel){
 /* ---------- timer ---------- */
 let tick=null;
 const RING_C=540.4;
-function idleTimer(){return {running:false,onBreak:false,startTs:0,accumMs:0,breakStartTs:0,breakMs:0,subjectId:null,kind:"",memo:"",planId:null,completePlan:true};}
+function idleTimer(){return {running:false,onBreak:false,startTs:0,accumMs:0,breakStartTs:0,breakMs:0,subjectId:null,kind:"",memo:"",planId:null,completePlan:true,startedAt:0,chapterId:""};}
+function dateStrOf(ts){const d=new Date(ts);return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());}
+function startedLabel(ts){
+  const d=new Date(ts),hm=d.getHours()+":"+pad(d.getMinutes());
+  return dateStrOf(ts)===todayStr()?hm:(d.getMonth()+1)+"/"+d.getDate()+" "+hm;
+}
 function studyMs(){
   const t=S.timer;
   return (t.accumMs||0)+((t.running&&!t.onBreak&&t.startTs)?Date.now()-t.startTs:0);
@@ -869,7 +1053,8 @@ function renderTimer(){
   $("brkBadgeWrap").innerHTML=(brk>0||t.onBreak)?'<span class="brk-badge">休憩 '+fmtMin(Math.max(brk,0)||0)+"</span>":"";
   $("timerCard").classList.toggle("break",!!t.onBreak);
   if(t.running){
-    $("timerSub").innerHTML=t.onBreak?"休憩中（計測を一時停止）":"<b>"+esc(subjName(t.subjectId))+"</b> を計測中";
+    $("timerSub").innerHTML=t.onBreak?"休憩中（計測を一時停止）":"<b>"+esc(subjName(t.subjectId))+"</b> を計測中"+
+      (t.startedAt?"<br>"+startedLabel(t.startedAt)+" 開始":"");
     $("btnStart").disabled=true;$("btnStop").disabled=false;$("btnCancel").disabled=false;$("btnBreak").disabled=false;
     $("btnBreak").textContent=t.onBreak?"再開":"休憩";
     $("btnBreak").className="btn "+(t.onBreak?"primary":"warn");
@@ -883,7 +1068,8 @@ function renderTimer(){
   }
   // リングは「今日の学習時間 ÷ 1日の目安」で進捗を示す
   const recorded=S.sessions.filter(s=>s.date===todayStr()).reduce((a,s)=>a+s.minutes,0);
-  const liveMin=recorded+studyMs()/60000;
+  const liveToday=!t.running||dateStrOf(t.startedAt||Date.now())===todayStr();
+  const liveMin=recorded+(liveToday?studyMs()/60000:0);
   const tgt=Math.max(1,dayTarget());
   const pct=Math.min(1,liveMin/tgt);
   $("ringFg").setAttribute("stroke-dashoffset",(RING_C*(1-pct)).toFixed(1));
@@ -898,13 +1084,23 @@ function renderTimer(){
   }
 }
 $("timerMemo").addEventListener("input",()=>{S.timer.memo=$("timerMemo").value;save();});
+function syncTimerChapter(){
+  const t=S.timer;
+  fillChapterSelect($("timerChapter"),t.running?t.subjectId:$("timerSubject").value,
+    t.running?t.chapterId:$("timerChapter").value);
+}
+$("timerSubject").addEventListener("change",syncTimerChapter);
+$("timerChapter").addEventListener("change",()=>{
+  if(S.timer.running){S.timer.chapterId=$("timerChapter").value;save();}
+});
 $("planLinkDone").addEventListener("change",()=>{S.timer.completePlan=$("planLinkDone").checked;save();});
 function startTick(){if(!tick)tick=setInterval(()=>{if(S.timer.running)renderTimer();},1000);}
 $("btnStart").addEventListener("click",()=>{
   const sid=$("timerSubject").value;
   if(!sid){alert("科目を追加してください（設定タブ）");return;}
   S.timer={running:true,onBreak:false,startTs:Date.now(),accumMs:0,breakStartTs:0,breakMs:0,
-    subjectId:sid,kind:$("timerKind").value||"",memo:$("timerMemo").value||"",planId:null,completePlan:true};
+    subjectId:sid,kind:$("timerKind").value||"",memo:$("timerMemo").value||"",planId:null,completePlan:true,
+    startedAt:Date.now(),chapterId:$("timerChapter").value||""};
   save();renderTimer();startTick();
 });
 $("btnBreak").addEventListener("click",()=>{
@@ -923,17 +1119,25 @@ $("btnStop").addEventListener("click",()=>{
   const min=Math.round(studyMs()/60000);
   if(min<1){alert("1分未満のため記録しません。破棄する場合は「破棄」を押してください。");return;}
   const t=S.timer;
-  const rec={id:uid(),date:todayStr(),subjectId:t.subjectId,minutes:min,
+  // 日付は「計測を開始した日」で記録する（日をまたいでも開始日に入る）
+  const rec={id:uid(),date:dateStrOf(t.startedAt||Date.now()),subjectId:t.subjectId,minutes:min,
     memo:($("timerMemo").value||t.memo||"").trim(),kind:t.kind||"",breakMin:Math.round(restMs()/60000)};
+  const chId=$("timerChapter").value||t.chapterId||"";
+  if(chId)rec.chapterId=chId;
   const plan=t.planId?S.plans.find(x=>x.id===t.planId):null;
   if(plan)rec.planId=plan.id;
+  const dtg=dayTarget(),wg=S.settings.goalHours*60,wm=mondayOf(rec.date);
+  const dayBefore=sumRange(rec.date,rec.date),wkBefore=sumRange(wm,addDays(wm,6));
   S.sessions.push(rec);
   const finish=!!plan&&t.completePlan!==false&&!plan.done;
   if(finish)plan.done=true;
   S.timer=idleTimer();
   $("timerMemo").value="";
-  save();renderAll();
-  toast(fmtMin(min)+"を記録しました"+(finish?"・予定を完了にしました":""));
+  save();
+  toast(fmtMin(min)+"を記録しました"+(rec.date!==todayStr()?"（"+mdOf(rec.date)+"の記録）":"")+(finish?"・予定を完了にしました":""));
+  if(rec.date===todayStr()&&dtg>0&&dayBefore<dtg&&dayBefore+min>=dtg)toast("今日の目安 "+fmtMin(dtg)+" を達成しました");
+  if(wkBefore<wg&&wkBefore+min>=wg)toast("今週の目標 "+S.settings.goalHours+"時間 を達成しました");
+  renderAll();
   if(finish&&reviewEligible(plan))openReviewDialog(plan);
 });
 $("btnCancel").addEventListener("click",()=>{
@@ -955,7 +1159,7 @@ function renderToday(){
   if(!keys.length){ul.innerHTML='<li class="empty">まだ記録がありません</li>';}
   keys.forEach(k=>{
     const li=document.createElement("li");li.className="sess";
-    li.innerHTML='<span class="dot '+(subjTrack(k)==="cpa"?"cpa":"")+'"></span><span class="name">'+esc(subjName(k))+'</span><span class="min">'+fmtMin(per[k])+"</span>";
+    li.innerHTML='<span class="dot '+subjCls(k)+'"></span><span class="name">'+esc(subjName(k))+'</span><span class="min">'+fmtMin(per[k])+"</span>";
     ul.appendChild(li);
   });
   // goal
@@ -976,7 +1180,9 @@ function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",
 $("btnAdd").addEventListener("click",()=>{
   const date=$("addDate").value,sid=$("addSubject").value,min=parseInt($("addMin").value,10);
   if(!date||!sid||!(min>0)){alert("日付・科目・時間を確認してください");return;}
-  S.sessions.push({id:uid(),date:date,subjectId:sid,minutes:min,memo:$("addMemo").value.trim(),kind:selectedKind});
+  const rec={id:uid(),date:date,subjectId:sid,minutes:min,memo:$("addMemo").value.trim(),kind:selectedKind};
+  if($("addChapter").value)rec.chapterId=$("addChapter").value;
+  S.sessions.push(rec);
   $("addMemo").value="";selectedKind="";
   save();renderAll();
 });
@@ -996,9 +1202,10 @@ function renderLog(){
     const ul=document.createElement("ul");ul.className="plain";
     byDate[d].forEach(s=>{
       const li=document.createElement("li");li.className="sess";
-      li.innerHTML='<span class="dot '+(subjTrack(s.subjectId)==="cpa"?"cpa":"")+'"></span>'+
+      li.innerHTML='<span class="dot '+subjCls(s.subjectId)+'"></span>'+
         '<span class="name">'+esc(subjName(s.subjectId))+
         (s.kind?' <span class="chip">'+esc(s.kind)+"</span>":"")+
+        (chapterName(s.chapterId)?' <span class="chip">'+esc(chapterName(s.chapterId))+"</span>":"")+
         ((s.memo||s.breakMin)?"<em>"+esc(s.memo||"")+(s.breakMin?(s.memo?"　":"")+"休憩 "+fmtMin(s.breakMin):"")+"</em>":"")+"</span>"+
         '<span class="min">'+fmtMin(s.minutes)+"</span>";
       const del=document.createElement("button");del.className="del";del.textContent="×";del.setAttribute("aria-label","削除");
@@ -1057,6 +1264,7 @@ function preparePlanModal(v){
   fillSlotSelect($("planSlot"),v.slot);
   fillSubjectSelect($("planSubject"),true);
   $("planSubject").value=v.subjectId||"";
+  fillChapterSelect($("planChapter"),v.subjectId||"",v.chapterId||"");
   fillKindSelect($("planKind"));
   $("planKind").value=v.kind||"";
   $("planMin").value=v.minutes?v.minutes:"";
@@ -1078,9 +1286,10 @@ function openPlanEdit(p,s){
   $("planSave").textContent="保存";
   $("planDelete").hidden=false;
   preparePlanModal({date:p.date,slot:(typeof p.slot==="number")?p.slot:s,
-    subjectId:p.subjectId,kind:p.kind,minutes:p.minutes,text:p.text});
+    subjectId:p.subjectId,kind:p.kind,minutes:p.minutes,text:p.text,chapterId:p.chapterId});
 }
 function closePlanModal(){editingId=null;$("planOverlay").classList.remove("on");}
+$("planSubject").addEventListener("change",()=>fillChapterSelect($("planChapter"),$("planSubject").value,""));
 $("planCancel").addEventListener("click",closePlanModal);
 $("planOverlay").addEventListener("click",e=>{if(e.target===$("planOverlay"))closePlanModal();});
 $("planDateInput").addEventListener("change",updatePlanDateLabel);
@@ -1097,10 +1306,11 @@ $("planSave").addEventListener("click",()=>{
     const p=S.plans.find(x=>x.id===editingId);
     if(p){
       p.date=date;p.subjectId=sid||"";p.minutes=min;p.text=text;p.kind=kind;p.slot=slot;
+      p.chapterId=$("planChapter").value||"";
     }
   }else{
     S.plans.push({id:uid(),date:date,subjectId:sid||"",minutes:min,text:text,
-      done:false,kind:kind,slot:slot});
+      done:false,kind:kind,slot:slot,chapterId:$("planChapter").value||""});
   }
   // 別の週へ移した場合は、その週を表示する
   weekOff=Math.round((dateOf(mondayOf(date))-dateOf(mondayOf(todayStr())))/604800000);
@@ -1150,12 +1360,11 @@ function planSlots(plans){
 }
 function planCell(p,s){
   const b=document.createElement("button");
-  const tr=p.subjectId?subjTrack(p.subjectId):"";
-  b.className="tcell "+(tr==="cpa"?"cpa":(p.subjectId?"boki":""))+(p.done?" done":"")+
+  b.className="tcell "+(p.subjectId?subjCls(p.subjectId):"")+(p.done?" done":"")+
     ((S.timer.running&&S.timer.planId===p.id)?" live":"");
   b.innerHTML='<span class="ts">'+(p.done?"✓ ":"")+esc(p.subjectId?subjName(p.subjectId):"予定")+"</span>"+
     (p.kind?'<span class="tk'+((p.reviewOf||p.kind==="復習")?" rev":"")+'">'+esc(p.kind)+"</span>":"")+
-    (p.text?'<span class="tx">'+esc(p.text)+"</span>":"")+
+    ((chapterName(p.chapterId)||p.text)?'<span class="tx">'+esc([chapterName(p.chapterId),p.text].filter(Boolean).join("・"))+"</span>":"")+
     (p.minutes?'<span class="tm">'+p.minutes+"分</span>":"");
   b.setAttribute("aria-label",(p.subjectId?subjName(p.subjectId):"予定")+(editMode?"：タップで編集":"：タップで計測・完了・編集、長押しで移動"));
   b.addEventListener("click",()=>{
@@ -1166,6 +1375,407 @@ function planCell(p,s){
   attachDrag(b,p,s);
   return b;
 }
+/* ---------- 科目カラー ---------- */
+// [ライト:線, ライト:背景, ダーク:線, ダーク:背景]
+const SC=[
+  ["#1D8A56","#E2F1E9","#35A873","#1C2F26"],
+  ["#4756B8","#E6E9F7","#7A88E6","#20263E"],
+  ["#B7791F","#F5EBD8","#CC9A3C","#2E2716"],
+  ["#C2416B","#F8E4EB","#E0779A","#35202A"],
+  ["#0F8A8A","#DDF1F1","#35B5B5","#15302F"],
+  ["#8A4FBF","#EFE6F7","#AD86DB","#2A2236"],
+  ["#D0632B","#FBE8DD","#E8895A","#362319"],
+  ["#2B7BC0","#E0EDF8","#5BA2E0","#182B3B"],
+  ["#6E8A1F","#EBF1DA","#98B544","#252C16"],
+  ["#5A6B78","#E8ECEF","#93A3B0","#232A2F"]
+];
+(function(){
+  let lt="",dk1="",dk2="";
+  SC.forEach((c,i)=>{
+    lt+=".sc"+i+"{--sc:"+c[0]+";--scs:"+c[1]+"}";
+    dk1+=":root:not([data-theme=light]) .sc"+i+"{--sc:"+c[2]+";--scs:"+c[3]+"}";
+    dk2+=":root[data-theme=dark] .sc"+i+"{--sc:"+c[2]+";--scs:"+c[3]+"}";
+  });
+  const el=document.createElement("style");
+  el.textContent=lt+"@media (prefers-color-scheme: dark){"+dk1+"}"+dk2;
+  document.head.appendChild(el);
+})();
+let paletteFor=null;
+function subjColor(id){
+  const x=subjById(id);
+  return (x&&typeof x.color==="number")?x.color%SC.length:(subjTrack(id)==="cpa"?1:0);
+}
+function subjCls(id){return "sc sc"+subjColor(id);}
+function mdOf(ds){const d=dateOf(ds);return (d.getMonth()+1)+"/"+d.getDate();}
+function fmtHrs(min){const h=min/60;return (h<100?h.toFixed(1):Math.round(h).toLocaleString())+"h";}
+
+/* ---------- 章 ---------- */
+function chaptersOf(sid){return S.chapters.filter(c=>c.subjectId===sid);}
+function chapterName(id){
+  if(!id)return "";
+  const c=S.chapters.find(x=>x.id===id);
+  return c?c.name:"";
+}
+function fillChapterSelect(sel,sid,cur){
+  const list=sid?chaptersOf(sid):[];
+  sel.innerHTML="";
+  const o=document.createElement("option");o.value="";
+  o.textContent=list.length?"（章を指定しない）":"（章は未登録）";
+  sel.appendChild(o);
+  list.forEach(c=>{const op=document.createElement("option");op.value=c.id;op.textContent=c.name;sel.appendChild(op);});
+  sel.value=(cur&&list.some(c=>c.id===cur))?cur:"";
+}
+// 章ごとの履歴：手動の記録・時間の記録・完了した予定
+function chapterEvents(ch){
+  const ev=[];
+  (ch.marks||[]).forEach((m,i)=>ev.push({kind:m.kind,date:m.date,src:"mark",idx:i}));
+  S.sessions.forEach(x=>{if(x.chapterId===ch.id&&x.kind)ev.push({kind:x.kind,date:x.date,src:"rec",min:x.minutes});});
+  S.plans.forEach(p=>{if(p.chapterId===ch.id&&p.done&&p.kind)ev.push({kind:p.kind,date:p.date,src:"plan"});});
+  return ev;
+}
+function chapterStat(ch){
+  const ev=chapterEvents(ch),out={};
+  ["講義","問題集","復習"].forEach(k=>{
+    const ds={};
+    ev.forEach(e=>{if(e.kind===k)ds[e.date]=1;});
+    const dates=Object.keys(ds).sort();
+    out[k]={count:dates.length,first:dates[0]||"",last:dates[dates.length-1]||""};
+  });
+  out.minutes=S.sessions.filter(x=>x.chapterId===ch.id).reduce((a,x)=>a+x.minutes,0);
+  const all=ev.map(e=>e.date).sort();
+  out.lastDate=all[all.length-1]||"";
+  return out;
+}
+let chSubj=null;
+function renderChapters(){
+  const subs=S.subjects.filter(x=>!x.archived);
+  if(!chSubj||!subs.some(x=>x.id===chSubj)){const w=subs.find(x=>chaptersOf(x.id).length)||subs[0];chSubj=w?w.id:null;}
+  const chips=$("chSubjChips");chips.innerHTML="";
+  subs.forEach(x=>{
+    const n=chaptersOf(x.id).length;
+    const b=document.createElement("button");b.type="button";
+    b.className="subjchip "+subjCls(x.id)+(x.id===chSubj?" on":"");
+    b.innerHTML='<span class="dot '+subjCls(x.id)+'"></span>'+esc(x.name)+(n?'<small style="color:var(--ink-3)">'+n+"章</small>":"");
+    b.addEventListener("click",()=>{chSubj=x.id;renderChapters();});
+    chips.appendChild(b);
+  });
+  const tbl=$("chTable"),sum=$("chSummary");
+  tbl.innerHTML="";sum.innerHTML="";
+  tbl.className="cht "+(chSubj?subjCls(chSubj):"");
+  sum.className=chSubj?subjCls(chSubj):"";
+  if(!chSubj){sum.innerHTML='<div class="empty">科目がありません</div>';return;}
+  const chs=chaptersOf(chSubj);
+  if(!chs.length){
+    sum.innerHTML='<div class="empty">まだ章がありません。下の「章を追加」か「まとめて作成」で登録してください。</div>';
+    return;
+  }
+  const stats=chs.map(c=>({c:c,st:chapterStat(c)}));
+  let sh='<div class="chsum">';
+  [["講義","講義済み"],["問題集","問題集済み"],["復習","復習済み"]].forEach(([k,lab])=>{
+    const n=stats.filter(x=>x.st[k].count>0).length,p=Math.round(n/chs.length*100);
+    sh+='<div class="cs"><div class="k">'+lab+'</div><div class="v">'+n+"<small> / "+chs.length+"章（"+p+'%）</small></div><div class="b"><i style="width:'+p+'%"></i></div></div>';
+  });
+  sum.innerHTML=sh+"</div>";
+  const thead=document.createElement("thead");
+  thead.innerHTML="<tr><th>章</th><th>講義</th><th>問題集</th><th>復習</th><th>学習時間</th><th>最後に学習</th></tr>";
+  tbl.appendChild(thead);
+  const tb=document.createElement("tbody");
+  stats.forEach(({c,st})=>{
+    const tr=document.createElement("tr");
+    const tn=document.createElement("td");
+    const nb=document.createElement("button");nb.type="button";nb.className="chname";nb.textContent=c.name;
+    nb.addEventListener("click",()=>renameChapter(c));
+    tn.appendChild(nb);tr.appendChild(tn);
+    ["講義","問題集","復習"].forEach(k=>{
+      const td=document.createElement("td"),b=document.createElement("button"),x=st[k];
+      b.type="button";b.className="chc"+(x.count?" on":"");
+      if(!x.count)b.textContent="—";
+      else if(k==="講義")b.innerHTML="<b>✓ "+mdOf(x.first)+"</b>"+(x.count>1?"<small>"+x.count+"回</small>":"");
+      else b.innerHTML="<b>"+x.count+"回</b><small>最終 "+mdOf(x.last)+"</small>";
+      b.setAttribute("aria-label",c.name+" "+k);
+      b.addEventListener("click",()=>openChapterDialog(c,k));
+      td.appendChild(b);tr.appendChild(td);
+    });
+    const tm=document.createElement("td");tm.textContent=st.minutes?fmtMin(st.minutes):"—";tr.appendChild(tm);
+    const tl=document.createElement("td");tl.textContent=st.lastDate?mdOf(st.lastDate):"—";tr.appendChild(tl);
+    tb.appendChild(tr);
+  });
+  tbl.appendChild(tb);
+}
+let renaming=null;
+function renameChapter(c){
+  renaming=c;
+  $("chRenameSub").textContent=subjName(c.subjectId);
+  $("chRenameInput").value=c.name;
+  $("chRenameOverlay").classList.add("on");
+}
+function closeRename(){renaming=null;$("chRenameOverlay").classList.remove("on");}
+$("chRenameCancel").addEventListener("click",closeRename);
+$("chRenameOverlay").addEventListener("click",e=>{if(e.target===$("chRenameOverlay"))closeRename();});
+$("chRenameSave").addEventListener("click",()=>{
+  const c=renaming,name=$("chRenameInput").value.trim();
+  if(!c)return;
+  if(!name){alert("章の名前を入力してください");return;}
+  c.name=name;closeRename();save();renderAll();
+});
+$("chRenameDel").addEventListener("click",()=>{
+  const c=renaming;
+  if(!c)return;
+  if(!confirm("「"+c.name+"」を削除しますか？ 記録や予定は残り、章の指定だけが外れます。"))return;
+  S.chapters=S.chapters.filter(x=>x.id!==c.id);
+  S.sessions.forEach(x=>{if(x.chapterId===c.id)delete x.chapterId;});
+  S.plans.forEach(x=>{if(x.chapterId===c.id)x.chapterId="";});
+  closeRename();save();renderAll();
+  toast("章を削除しました");
+});
+let chDlg=null;
+function openChapterDialog(c,k){
+  chDlg={c:c,k:k};
+  $("chTitle").textContent=c.name+"・"+k;
+  $("chSub").textContent=subjName(c.subjectId);
+  $("chDate").value=todayStr();
+  renderChapterLog();
+  $("chOverlay").classList.add("on");
+}
+function renderChapterLog(){
+  const c=chDlg.c,k=chDlg.k;
+  const ev=chapterEvents(c).filter(e=>e.kind===k).sort((a,b)=>a.date<b.date?-1:1);
+  const box=$("chLog");box.innerHTML="";
+  if(!ev.length){box.innerHTML='<div class="muted">まだ記録がありません。</div>';return;}
+  ev.forEach(e=>{
+    const row=document.createElement("div");row.className="cl";
+    const dd=dateOf(e.date);
+    row.innerHTML="<b>"+(dd.getMonth()+1)+"/"+dd.getDate()+"（"+"日月火水木金土"[dd.getDay()]+"）</b><span>"+
+      (e.src==="rec"?"記録 "+fmtMin(e.min):(e.src==="plan"?"予定を完了":"手動で記録"))+"</span>";
+    if(e.src==="mark"){
+      const x=document.createElement("button");x.type="button";x.textContent="×";x.setAttribute("aria-label","この記録を取り消す");
+      x.addEventListener("click",()=>{c.marks.splice(e.idx,1);save();renderAll();renderChapterLog();});
+      row.appendChild(x);
+    }
+    box.appendChild(row);
+  });
+}
+function closeChapterDialog(){chDlg=null;$("chOverlay").classList.remove("on");}
+$("chClose").addEventListener("click",closeChapterDialog);
+$("chOverlay").addEventListener("click",e=>{if(e.target===$("chOverlay"))closeChapterDialog();});
+$("chMark").addEventListener("click",()=>{
+  if(!chDlg)return;
+  const c=chDlg.c,k=chDlg.k,d=$("chDate").value||todayStr();
+  if(!Array.isArray(c.marks))c.marks=[];
+  c.marks.push({kind:k,date:d});
+  save();
+  toast(c.name+"の"+k+"を記録しました");
+  renderAll();renderChapterLog();
+});
+$("chAdd").addEventListener("click",()=>{
+  const name=$("chNewName").value.trim();
+  if(!chSubj){alert("先に科目を選んでください");return;}
+  if(!name){alert("章の名前を入力してください");return;}
+  S.chapters.push({id:uid(),subjectId:chSubj,name:name,marks:[]});
+  $("chNewName").value="";
+  save();renderAll();
+});
+$("chBulk").addEventListener("click",()=>{
+  const n=parseInt($("chBulkN").value,10);
+  if(!chSubj){alert("先に科目を選んでください");return;}
+  if(!(n>=1&&n<=50)){alert("1〜50の数を入力してください");return;}
+  const have=chaptersOf(chSubj).length;
+  for(let i=1;i<=n;i++)S.chapters.push({id:uid()+i,subjectId:chSubj,name:"第"+(have+i)+"章",marks:[]});
+  $("chBulkN").value="";
+  save();renderAll();
+  toast(subjName(chSubj)+"に"+n+"章を追加しました");
+});
+$("addSubject").addEventListener("change",()=>fillChapterSelect($("addChapter"),$("addSubject").value,""));
+
+/* ---------- 合格目安時間 ---------- */
+function trackMinutes(tr){return S.sessions.reduce((a,x)=>a+(subjTrack(x.subjectId)===tr?x.minutes:0),0);}
+function examTotals(){
+  const tg=S.settings.targets;
+  return {
+    boki:trackMinutes("boki")+tg.priorBoki*60,
+    cpa:trackMinutes("cpa")+(tg.includeBoki?trackMinutes("boki"):0)+tg.priorCpa*60
+  };
+}
+// 直近4週（今週を除く）の週平均（分）
+function recentWeeklyAvg(filter){
+  const mon=mondayOf(todayStr());let sum=0;
+  for(let i=1;i<=4;i++){
+    const m=addDays(mon,-7*i),e=addDays(m,6);
+    S.sessions.forEach(x=>{if(x.date>=m&&x.date<=e&&filter(x))sum+=x.minutes;});
+  }
+  return sum/4;
+}
+function renderGoalHours(){
+  const tg=S.settings.targets,et=examTotals(),box=$("goalHrs");
+  const cpaF=x=>subjTrack(x.subjectId)==="cpa"||(tg.includeBoki&&subjTrack(x.subjectId)==="boki");
+  const bokiF=x=>subjTrack(x.subjectId)==="boki";
+  box.innerHTML="";
+  [["公認会計士","cpa",et.cpa,tg.cpa,S.settings.cpaDate,"短答式",cpaF],
+   ["日商簿記1級","boki",et.boki,tg.boki,S.settings.bokiDate,"試験",bokiF]].forEach(it=>{
+    const name=it[0],cls=it[1],min=it[2],target=it[3],exam=it[4],examLab=it[5],flt=it[6];
+    const pct=target>0?Math.min(100,min/60/target*100):0;
+    const remain=Math.max(0,target*60-min),avg=recentWeeklyAvg(flt);
+    let note;
+    if(remain<=0)note="目安の時間に到達しました。";
+    else{
+      note="残り <b>"+fmtHrs(remain)+"</b>　直近4週の平均 <b>"+fmtH(avg)+"h/週</b>";
+      if(avg>0){
+        const wk=remain/avg;
+        if(wk>520)note+="<br>このペースだと目安到達は10年以上先です";
+        else{const d=dateOf(addDays(todayStr(),Math.round(wk*7)));note+="<br>このペースなら目安到達は <b>"+d.getFullYear()+"年"+(d.getMonth()+1)+"月ごろ</b>";}
+      }
+    }
+    if(exam){
+      const days=Math.round((dateOf(exam)-dateOf(todayStr()))/86400000);
+      if(days>0)note+="<br>"+examLab+"（"+mdOf(exam)+"）までの見込み：累計 <b>"+fmtHrs(min+avg*days/7)+"</b>";
+    }
+    const el=document.createElement("div");el.className="gh "+cls;
+    el.innerHTML='<div class="gh-k">'+name+"　目安 "+target.toLocaleString()+"時間</div>"+
+      '<div class="gh-v">'+fmtHrs(min)+"<small>（"+pct.toFixed(1)+"%）</small></div>"+
+      '<div class="gh-bar"><i style="width:'+pct.toFixed(1)+'%"></i></div>'+
+      '<div class="gh-note">'+note+"</div>";
+    box.appendChild(el);
+  });
+}
+function renderTargetsConf(){
+  const tg=S.settings.targets;
+  $("tgCpa").value=tg.cpa;$("tgBoki").value=tg.boki;
+  $("tgPriorCpa").value=tg.priorCpa;$("tgPriorBoki").value=tg.priorBoki;
+  $("tgIncBoki").checked=!!tg.includeBoki;
+}
+[["tgCpa","cpa",1],["tgBoki","boki",1],["tgPriorCpa","priorCpa",0],["tgPriorBoki","priorBoki",0]].forEach(it=>{
+  $(it[0]).addEventListener("change",()=>{
+    const v=parseInt($(it[0]).value,10);
+    if(v>=it[2]){S.settings.targets[it[1]]=v;save();renderAll();}
+  });
+});
+$("tgIncBoki").addEventListener("change",()=>{S.settings.targets.includeBoki=$("tgIncBoki").checked;save();renderAll();});
+
+/* ---------- バッジ ---------- */
+// [id, 名前, メダルの文字, 指標, 必要な値]
+const BADGES=[
+  ["first","はじめの一歩","初","n",1],
+  ["h10","累計10時間","10h","h",10],["h50","累計50時間","50h","h",50],["h100","累計100時間","100h","h",100],
+  ["h300","累計300時間","300h","h",300],["h500","累計500時間","500h","h",500],["h1000","累計1000時間","1000h","h",1000],
+  ["h2000","累計2000時間","2000h","h",2000],["h3000","累計3000時間","3000h","h",3000],
+  ["s3","3日連続","3日","streak",3],["s7","7日連続","7日","streak",7],["s14","14日連続","14日","streak",14],
+  ["s30","30日連続","30日","streak",30],["s100","100日連続","100日","streak",100],
+  ["d3","1日3時間","3h","day",3],["d5","1日5時間","5h","day",5],["d8","1日8時間","8h","day",8],
+  ["w1","週間目標達成","週1","weeks",1],["w4","週間目標4回","週4","weeks",4],["w12","週間目標12回","週12","weeks",12],
+  ["c5","講義5章","講5","lec",5],["c20","講義20章","講20","lec",20],["c50","講義50章","講50","lec",50],
+  ["r10","復習10回","復10","rev",10],["r50","復習50回","復50","rev",50],["r100","復習100回","復100","rev",100]
+];
+function badgeMetrics(){
+  const tot=S.sessions.reduce((a,x)=>a+x.minutes,0);
+  const byDay={},byWeek={},linked={};
+  S.sessions.forEach(x=>{
+    byDay[x.date]=(byDay[x.date]||0)+x.minutes;
+    const m=mondayOf(x.date);byWeek[m]=(byWeek[m]||0)+x.minutes;
+    if(x.planId)linked[x.planId]=1;
+  });
+  let maxDay=0;Object.keys(byDay).forEach(k=>{if(byDay[k]>maxDay)maxDay=byDay[k];});
+  const g=S.settings.goalHours*60;
+  const weeks=Object.keys(byWeek).filter(k=>byWeek[k]>=g).length;
+  const lec=S.chapters.filter(c=>chapterStat(c)["講義"].count>0).length;
+  let rev=0;
+  S.sessions.forEach(x=>{if(x.kind==="復習")rev++;});
+  S.plans.forEach(p=>{if(p.kind==="復習"&&p.done&&!linked[p.id])rev++;});
+  return {n:S.sessions.length,h:tot/60,streak:longestStreak(),day:maxDay/60,weeks:weeks,lec:lec,rev:rev};
+}
+const BADGE_UNIT={n:"件",h:"時間",streak:"日",weeks:"回",lec:"章",rev:"回"};
+function badgeLeft(b,m){
+  if(b[3]==="day")return "1日"+b[4]+"時間の日をつくる";
+  const d=b[4]-m[b[3]];
+  return "あと"+(b[3]==="h"?d.toFixed(1):Math.ceil(d))+BADGE_UNIT[b[3]];
+}
+function checkBadges(){
+  const m=badgeMetrics(),got=[];
+  BADGES.forEach(b=>{if(!S.badges[b[0]]&&m[b[3]]>=b[4]){S.badges[b[0]]=todayStr();got.push(b[1]);}});
+  // 初めて読み込んだときは、すでに達成済みのものを静かに付与する
+  if(S.badgesSilent){delete S.badgesSilent;save();return;}
+  if(got.length){save();toast("バッジ獲得：「"+got[0]+"」"+(got.length>1?" ほか"+(got.length-1)+"個":""));}
+}
+function nextBadge(){
+  const m=badgeMetrics();let best=null;
+  BADGES.forEach(b=>{
+    if(S.badges[b[0]]||b[3]==="day")return;
+    const r=m[b[3]]/b[4];
+    if(!best||r>best.r)best={r:r,name:b[1],left:badgeLeft(b,m)};
+  });
+  return best;
+}
+function renderBadges(){
+  const m=badgeMetrics(),grid=$("badgeGrid");grid.innerHTML="";
+  let n=0;
+  BADGES.forEach(b=>{
+    const on=!!S.badges[b[0]];if(on)n++;
+    const el=document.createElement("div");el.className="bdg"+(on?" on":"");
+    el.innerHTML='<div class="md">'+esc(b[2])+'</div><div class="bn">'+esc(b[1])+'</div><div class="bp">'+
+      (on?mdOf(S.badges[b[0]])+" 獲得":esc(badgeLeft(b,m)))+"</div>";
+    grid.appendChild(el);
+  });
+  $("bdgSum").textContent="獲得 "+n+" / "+BADGES.length;
+}
+
+/* ---------- 今日のひとこと・今日の予定 ---------- */
+function renderCheer(){
+  const t=todayStr(),today=sumRange(t,t),dt=dayTarget(),st=streak(),msgs=[];
+  if(S.timer.running)msgs.push("計測中です。<b>"+esc(subjName(S.timer.subjectId))+"</b>に集中しましょう。");
+  else if(dt>0&&today>=dt)msgs.push("今日の目安 <b>"+fmtMin(dt)+"</b> を達成しました。おつかれさまです。");
+  else if(today>0)msgs.push("今日の目安まで あと<b>"+fmtMin(dt-today)+"</b>。");
+  else msgs.push("今日はまだ記録がありません。まずは<b>15分</b>から始めましょう。");
+  if(st>=2)msgs.push("<b>"+st+"日</b>連続で学習中。");
+  const tp=S.plans.filter(p=>p.date===t);
+  if(tp.length)msgs.push("今日の予定は残り<b>"+tp.filter(p=>!p.done).length+"/"+tp.length+"件</b>。");
+  const nb=nextBadge();
+  if(nb)msgs.push("次のバッジ「"+esc(nb.name)+"」まで"+esc(nb.left.replace("あと","あと "))+"。");
+  $("cheerTxt").innerHTML=msgs.join(" ");
+}
+function renderTodayPlans(){
+  const t=todayStr(),box=$("tpList");box.innerHTML="";
+  const todays=planSlots(S.plans.filter(p=>p.date===t)).sort((a,b)=>a.s-b.s);
+  const late=S.plans.filter(p=>p.date<t&&!p.done&&(p.reviewOf||p.kind==="復習"))
+    .sort((a,b)=>a.date<b.date?-1:1).slice(0,10);
+  $("tpNote").textContent=todays.length?("残り "+todays.filter(x=>!x.p.done).length+" / "+todays.length+"件"):"";
+  if(!todays.length&&!late.length){
+    box.innerHTML='<div class="empty">今日の予定はありません。週間タブの時間割から追加できます。</div>';
+    return;
+  }
+  todays.forEach(x=>box.appendChild(tpRow(x.p,x.s,false)));
+  if(late.length){
+    const h=document.createElement("div");h.className="tp-sec late";
+    h.textContent="やり残しの復習（"+late.length+"件）";box.appendChild(h);
+    late.forEach(p=>box.appendChild(tpRow(p,0,true)));
+  }
+}
+function tpRow(p,s,isLate){
+  const row=document.createElement("div");row.className="tp-row"+(p.done?" done":"");
+  const live=S.timer.running&&S.timer.planId===p.id;
+  const sub=[isLate?mdOf(p.date)+"の予定":(s+1)+"限",p.kind,chapterName(p.chapterId),p.text,p.minutes?p.minutes+"分":""]
+    .filter(Boolean).join("・");
+  row.innerHTML='<span class="dot '+(p.subjectId?subjCls(p.subjectId):"")+'"></span><div class="tp-main"><b>'+
+    esc(p.subjectId?subjName(p.subjectId):"予定")+"</b><small>"+esc(sub)+"</small></div>";
+  if(!p.done){
+    const go=document.createElement("button");go.type="button";go.className="tp-btn go";
+    go.textContent=live?"計測中":"開始";
+    go.addEventListener("click",()=>startTimerFromPlan(p));
+    row.appendChild(go);
+  }
+  if(isLate){
+    const mv=document.createElement("button");mv.type="button";mv.className="tp-btn";mv.textContent="今日へ";
+    mv.addEventListener("click",()=>{p.date=todayStr();delete p.slot;save();renderAll();toast("今日の予定に移しました");});
+    row.appendChild(mv);
+  }
+  const ck=document.createElement("button");ck.type="button";ck.className="tp-btn";
+  ck.textContent=p.done?"取消":"✓";ck.setAttribute("aria-label",p.done?"完了を取り消す":"完了にする");
+  ck.addEventListener("click",()=>{
+    p.done=!p.done;save();renderAll();
+    if(p.done&&reviewEligible(p))openReviewDialog(p);
+  });
+  row.appendChild(ck);
+  return row;
+}
+
 /* ---------- 予定の操作メニュー ---------- */
 let sheetFor=null;
 function showTab(name){document.querySelector('nav.tabs button[data-tab="'+name+'"]').click();}
@@ -1173,7 +1783,7 @@ function openPlanSheet(p,s){
   sheetFor={p:p,s:s};
   const dd=dateOf(p.date);
   $("sheetTitle").textContent=(p.subjectId?subjName(p.subjectId):"予定")+(p.kind?"・"+p.kind:"");
-  $("sheetSub").textContent=[p.text,p.minutes?p.minutes+"分":""].filter(Boolean).join("・")+
+  $("sheetSub").textContent=[chapterName(p.chapterId),p.text,p.minutes?p.minutes+"分":""].filter(Boolean).join("・")+
     "　"+(dd.getMonth()+1)+"/"+dd.getDate()+"（"+"日月火水木金土"[dd.getDay()]+"）"+(s+1)+"限";
   const live=S.timer.running&&S.timer.planId===p.id;
   $("sheetTimer").textContent=live?"計測中のタイマーを開く":"▶︎ タイマーで計測";
@@ -1210,7 +1820,8 @@ function startTimerFromPlan(p){
   const sid=p.subjectId||$("timerSubject").value;
   if(!sid){alert("この予定には科目がありません。編集で科目を設定してから計測してください。");return;}
   S.timer={running:true,onBreak:false,startTs:Date.now(),accumMs:0,breakStartTs:0,breakMs:0,
-    subjectId:sid,kind:p.kind||"",memo:p.text||"",planId:p.id,completePlan:true};
+    subjectId:sid,kind:p.kind||"",memo:p.text||"",planId:p.id,completePlan:true,
+    startedAt:Date.now(),chapterId:p.chapterId||""};
   save();
   showTab("home");
   startTick();
@@ -1223,12 +1834,16 @@ function rvLabel(days){
   const hit=RV_PRESETS.find(x=>x[0]===days);
   return hit?hit[1]:days+"日後";
 }
-let toastTimer=null;
-function toast(msg){
+let toastTimer=null,toastQ=[],toastBusy=false;
+function toast(msg){toastQ.push(msg);if(!toastBusy)nextToast();}
+function nextToast(){
+  const msg=toastQ.shift();
+  if(!msg){toastBusy=false;return;}
+  toastBusy=true;
   const t=$("toast");
   t.textContent=msg;t.classList.add("on");
   clearTimeout(toastTimer);
-  toastTimer=setTimeout(()=>t.classList.remove("on"),3000);
+  toastTimer=setTimeout(()=>{t.classList.remove("on");setTimeout(nextToast,260);},2600);
 }
 // 提案するのは：設定ON・対象の学習タイプ・復習自身ではない・まだ復習を登録していない予定
 function reviewEligible(p){
@@ -1271,7 +1886,8 @@ $("reviewAdd").addEventListener("click",()=>{
     const date=addDays(base,days);
     dates.push(date.slice(5).replace("-","/").replace(/^0/,""));
     S.plans.push({id:uid(),date:date,subjectId:p.subjectId||"",minutes:min,
-      text:(i+1)+"回目"+(p.text?"・"+p.text:""),done:false,kind:"復習",reviewOf:p.id,reviewNo:i+1});
+      text:(i+1)+"回目"+(p.text?"・"+p.text:""),done:false,kind:"復習",reviewOf:p.id,reviewNo:i+1,
+      chapterId:p.chapterId||""});
   });
   closeReviewDialog();
   save();renderAll();
@@ -1477,9 +2093,9 @@ function renderTimetable(){
     const td=document.createElement("td"),box=document.createElement("div");
     box.className="acell";
     if(m){
-      const tracks={};
-      recs.forEach(s=>{tracks[subjTrack(s.subjectId)]=1;});
-      box.innerHTML=Object.keys(tracks).map(t=>'<span class="dot'+(t==="cpa"?" cpa":"")+'"></span>').join("")+
+      const subs={};
+      recs.forEach(x=>{subs[x.subjectId]=1;});
+      box.innerHTML=Object.keys(subs).slice(0,4).map(id=>'<span class="dot '+subjCls(id)+'"></span>').join("")+
         "<b>"+fmtMin(m)+"</b>";
     }else box.innerHTML='<span style="color:var(--ink-3)">—</span>';
     td.appendChild(box);ar.appendChild(td);
@@ -1520,8 +2136,7 @@ function renderMonth(){
     let html='<span class="dn">'+dd.getDate()+"</span>";
     if(m)html+='<span class="ma">'+fmtMin(m)+"</span>";
     plans.slice(0,2).forEach(p=>{
-      const tr=p.subjectId?subjTrack(p.subjectId):"boki";
-      html+='<span class="mchip'+(tr==="cpa"?" cpa":"")+(p.done?" done":"")+'">'+
+      html+='<span class="mchip '+(p.subjectId?subjCls(p.subjectId):"")+(p.done?" done":"")+'">'+
         esc(p.subjectId?subjName(p.subjectId):(p.text||"予定"))+"</span>";
     });
     if(plans.length>2)html+='<span class="mmore">ほか'+(plans.length-2)+"件</span>";
@@ -2089,7 +2704,7 @@ function renderSubjChart(){
   const max=per[keys[0]];
   keys.forEach(k=>{
     const row=document.createElement("div");
-    row.className="hrow "+(subjTrack(k)==="cpa"?"cpa":"");
+    row.className="hrow "+subjCls(k);
     row.innerHTML='<span class="nm">'+esc(subjName(k))+'</span><span class="bar"><i style="width:'+(per[k]/max*100)+'%"></i></span><span class="val">'+fmtMin(per[k])+"</span>";
     box.appendChild(row);
   });
@@ -2129,8 +2744,23 @@ function renderConf(){
   $("cfgGoal").value=S.settings.goalHours;
   const ul=$("subjList");ul.innerHTML="";
   S.subjects.filter(s=>!s.archived).forEach(s=>{
-    const li=document.createElement("li");li.className="subj-row";
-    li.innerHTML='<span class="dot '+(s.track==="cpa"?"cpa":"")+'"></span><span class="nm">'+esc(s.name)+'</span><span class="chip">'+trackLabel(s.track)+"</span>";
+    const li=document.createElement("li");li.className="subj-row";li.style.flexWrap="wrap";
+    const sw=document.createElement("button");sw.type="button";
+    sw.className="swatch "+subjCls(s.id);sw.setAttribute("aria-label",s.name+"の色を変える");
+    sw.addEventListener("click",()=>{paletteFor=(paletteFor===s.id)?null:s.id;renderConf();});
+    li.appendChild(sw);
+    li.insertAdjacentHTML("beforeend",'<span class="nm">'+esc(s.name)+'</span><span class="chip">'+trackLabel(s.track)+"</span>");
+    if(paletteFor===s.id){
+      const pal=document.createElement("div");pal.className="palette";
+      SC.forEach((c,i)=>{
+        const b=document.createElement("button");b.type="button";
+        b.className="swatch sc"+i+(subjColor(s.id)===i?" on":"");
+        b.setAttribute("aria-label","色 "+(i+1));
+        b.addEventListener("click",()=>{s.color=i;paletteFor=null;save();renderAll();});
+        pal.appendChild(b);
+      });
+      li.appendChild(pal);
+    }
     const del=document.createElement("button");del.className="del btn ghost";del.style.minHeight="36px";del.style.padding="0 12px";del.textContent="削除";
     del.addEventListener("click",()=>{
       const used=S.sessions.some(x=>x.subjectId===s.id);
@@ -2167,7 +2797,9 @@ $("cfgGoal").addEventListener("change",e=>{const v=parseInt(e.target.value,10);i
 $("btnAddSubj").addEventListener("click",()=>{
   const name=$("newSubjName").value.trim();
   if(!name){alert("科目名を入力してください");return;}
-  S.subjects.push({id:uid(),name:name,track:$("newSubjTrack").value,archived:false});
+  const used={};S.subjects.forEach(x=>{if(typeof x.color==="number")used[x.color]=1;});
+  let c=0;while(used[c]&&c<SC.length-1)c++;
+  S.subjects.push({id:uid(),name:name,track:$("newSubjTrack").value,archived:false,color:c});
   $("newSubjName").value="";
   save();renderAll();
 });
@@ -2259,7 +2891,7 @@ $("btnReset").addEventListener("click",()=>{
   if(!confirm("すべての記録・設定を削除します。よろしいですか？\n（削除直前の状態はバックアップに残るので「バックアップから復元」で戻せます）"))return;
   if(!confirm("本当に削除しますか？"))return;
   autoBackupNow();
-  S=defaultState();save();renderAll();
+  S=normalizeState(null);save();renderAll();
 });
 
 /* ---------- render all ---------- */
@@ -2271,7 +2903,11 @@ function renderAll(){
   fillKindSelect($("timerKind"));
   renderKindChips();
   if(!$("addDate").value)$("addDate").value=todayStr();
+  syncTimerChapter();
+  fillChapterSelect($("addChapter"),$("addSubject").value,$("addChapter").value);
+  checkBadges();
   renderCountdown();renderTimer();renderToday();renderWeek();renderLog();
+  renderCheer();renderTodayPlans();renderGoalHours();renderChapters();renderBadges();renderTargetsConf();
   renderTiles();renderHeatmap();renderTrendChart();renderDowChart();renderPace();
   renderWeekChart();renderSubjChart();renderKindChart();renderConf();renderBackupInfo();renderReviewConf();
   if(S.timer.running){$("timerSubject").value=S.timer.subjectId;startTick();}
