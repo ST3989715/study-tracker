@@ -373,6 +373,24 @@ table.cht td{padding:4px 6px;border-bottom:1px solid var(--border-soft);vertical
 .bdg .bp{font-size:10px;color:var(--ink-3)}
 .bdg-sum{font-size:13px;color:var(--ink-2);margin:-4px 0 14px}
 @media(max-width:440px){nav.tabs{gap:3px}nav.tabs button{font-size:13px;padding:0}}
+/* 記録と章の紐づけ */
+.lk-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.lk-bar .seg{margin-bottom:0}
+.lk-row{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;padding:12px 0;border-bottom:1px solid var(--border-soft);align-items:start}
+.lk-row input[type=checkbox]{width:22px;height:22px;margin:2px 0 0;accent-color:var(--boki)}
+.lk-main{min-width:0}
+.lk-head{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;font-variant-numeric:tabular-nums}
+.lk-head b{font-size:14px}
+.lk-head span{font-size:12px;color:var(--ink-3)}
+.lk-memo{font-size:12px;color:var(--ink-2);margin-top:2px;overflow-wrap:anywhere}
+.lk-ctl{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center}
+.lk-ctl select{min-height:40px;width:auto;max-width:100%;flex:1 1 180px;font-size:14px}
+.lk-ctl select.kind{flex:0 1 130px}
+.lk-sug{font-size:12px;min-height:36px;border:1px dashed var(--boki);color:var(--boki);background:var(--boki-soft);border-radius:9px;padding:0 12px;cursor:pointer;font-family:inherit;text-align:left}
+.lk-bulk{position:sticky;bottom:0;z-index:5;background:var(--card);border-top:1px solid var(--border);padding:10px 0 4px;margin-top:6px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.lk-bulk select{min-height:42px;width:auto;flex:1 1 160px;font-size:14px}
+.lk-bulk .muted{flex:0 0 auto}
+.lk-more{text-align:center;margin-top:10px}
 </style>
 
 <div class="wrap">
@@ -545,6 +563,21 @@ table.cht td{padding:4px 6px;border-bottom:1px solid var(--border-soft);vertical
       <label class="f" style="max-width:220px"><span>まとめて作成（章の数）</span><input type="number" id="chBulkN" min="1" max="50" placeholder="例：15"></label>
       <button class="btn" id="chBulk">まとめて作成</button>
       <button class="btn" id="chPreset">標準の論点で作成</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>記録と章の紐づけ<span class="note" id="lkNote"></span></h2>
+    <p class="muted">これまでの記録に章を付けると、上の進み具合に反映されます。上で選んでいる科目の記録が並びます。メモに論点の名前があれば「候補」を出すので、タップで反映できます。メモがない記録は、チェックを付けて下のバーでまとめて設定できます。学習タイプ（講義・問題集・復習）を付けると、上の表の該当する列に入ります。</p>
+    <div class="lk-bar">
+      <div class="seg" id="lkFilter"><button data-f="todo" class="on">章が未設定</button><button data-f="all">すべて</button></div>
+      <button class="btn" id="lkApplyAll">候補をすべて反映</button>
+    </div>
+    <div id="lkList"></div>
+    <div class="lk-bulk">
+      <span class="muted" id="lkSelCount">0件選択中</span>
+      <select id="lkBulkCh" aria-label="まとめて設定する章"></select>
+      <select id="lkBulkKind" aria-label="まとめて設定する学習タイプ"></select>
+      <button class="btn primary" id="lkBulkApply">選んだ記録に設定</button>
     </div>
   </div>
   <div class="card">
@@ -1458,7 +1491,7 @@ function renderChapters(){
     const b=document.createElement("button");b.type="button";
     b.className="subjchip "+subjCls(x.id)+(x.id===chSubj?" on":"");
     b.innerHTML='<span class="dot '+subjCls(x.id)+'"></span>'+esc(x.name)+(n?'<small style="color:var(--ink-3)">'+n+"章</small>":"");
-    b.addEventListener("click",()=>{chSubj=x.id;renderChapters();});
+    b.addEventListener("click",()=>{chSubj=x.id;lkSel={};lkLimit=50;renderChapters();renderLinker();});
     chips.appendChild(b);
   });
   const tbl=$("chTable"),sum=$("chSummary");
@@ -1588,6 +1621,163 @@ $("chBulk").addEventListener("click",()=>{
   toast(subjName(chSubj)+"に"+n+"章を追加しました");
 });
 $("addSubject").addEventListener("change",()=>fillChapterSelect($("addChapter"),$("addSubject").value,""));
+
+/* ---------- 記録と章の紐づけ ---------- */
+let lkFilter="todo",lkSel={},lkLimit=50;
+function recHasChapter(x){return !!(x.chapterId&&chapterName(x.chapterId));}
+// 章の名前から照合用の語を作る（「第14章 退職給付会計」→「退職給付会計」「退職給付」）
+function chapterTokens(c){
+  let t=c.name;
+  if(t.indexOf("第")===0&&t.indexOf(" ")>0)t=t.slice(t.indexOf(" ")+1);
+  ["（","）","(",")","・","、","　"," ","／","/"].forEach(d=>{t=t.split(d).join("|");});
+  const out=[];
+  t.split("|").forEach(w=>{
+    if(w.length<2)return;
+    out.push(w);
+    ["会計","計算","の計算"].forEach(suf=>{
+      if(w.length>suf.length+1&&w.slice(-suf.length)===suf)out.push(w.slice(0,-suf.length));
+    });
+  });
+  return out;
+}
+// 候補：予定から計測した記録はその予定の章、なければメモに含まれる最も長い論点名
+function suggestChapter(x){
+  if(x.planId){
+    const p=S.plans.find(y=>y.id===x.planId);
+    if(p&&p.chapterId&&chapterName(p.chapterId))return p.chapterId;
+  }
+  const text=x.memo||"";
+  if(!text)return "";
+  let best="",bestLen=0;
+  chaptersOf(x.subjectId).forEach(c=>{
+    chapterTokens(c).forEach(w=>{if(w.length>bestLen&&text.indexOf(w)>=0){best=c.id;bestLen=w.length;}});
+  });
+  return best;
+}
+function setRecChapter(x,chId){
+  if(chId)x.chapterId=chId;else delete x.chapterId;
+  if(chId&&x.planId){
+    const p=S.plans.find(y=>y.id===x.planId);
+    if(p&&!p.chapterId)p.chapterId=chId;
+  }
+}
+function refreshLkCounts(){
+  $("lkNote").textContent="未設定 "+S.sessions.filter(x=>!recHasChapter(x)).length+"件（全科目）";
+  const n=chSubj?S.sessions.filter(x=>x.subjectId===chSubj&&!recHasChapter(x)&&suggestChapter(x)).length:0;
+  $("lkApplyAll").textContent="候補をすべて反映（"+n+"件）";
+  $("lkApplyAll").disabled=!n;
+}
+function syncLkBulk(){
+  const n=Object.keys(lkSel).length;
+  $("lkSelCount").textContent=n+"件選択中";
+  const bc=$("lkBulkCh");
+  fillChapterSelect(bc,chSubj,bc.value);
+  bc.options[0].textContent="（章は変えない）";
+  const kb=$("lkBulkKind"),kv=kb.value||"__keep";
+  kb.innerHTML="";
+  const k0=document.createElement("option");k0.value="__keep";k0.textContent="（学習タイプは変えない）";kb.appendChild(k0);
+  S.kinds.forEach(k=>{const o=document.createElement("option");o.value=k;o.textContent=k;kb.appendChild(o);});
+  kb.value=[...kb.options].some(o=>o.value===kv)?kv:"__keep";
+  $("lkBulkApply").disabled=!n;
+}
+function renderLinker(){
+  const box=$("lkList");box.innerHTML="";
+  refreshLkCounts();
+  const sid=chSubj;
+  if(!sid){box.innerHTML='<div class="empty">科目がありません</div>';syncLkBulk();return;}
+  if(!chaptersOf(sid).length){
+    box.innerHTML='<div class="empty">この科目には章がありません。上で章を登録すると紐づけできます。</div>';
+    syncLkBulk();return;
+  }
+  let recs=S.sessions.filter(x=>x.subjectId===sid).sort((a,b)=>a.date<b.date?1:(a.date>b.date?-1:0));
+  if(lkFilter==="todo")recs=recs.filter(x=>!recHasChapter(x));
+  if(!recs.length){
+    box.innerHTML='<div class="empty">'+(lkFilter==="todo"?"この科目の記録は、すべて章が設定済みです。":"この科目の記録はまだありません。")+"</div>";
+    syncLkBulk();return;
+  }
+  recs.slice(0,lkLimit).forEach(x=>box.appendChild(lkRow(x)));
+  if(recs.length>lkLimit){
+    const more=document.createElement("div");more.className="lk-more";
+    const b=document.createElement("button");b.type="button";b.className="btn ghost";
+    b.textContent="さらに表示（残り"+(recs.length-lkLimit)+"件）";
+    b.addEventListener("click",()=>{lkLimit+=50;renderLinker();});
+    more.appendChild(b);box.appendChild(more);
+  }
+  syncLkBulk();
+}
+function lkRow(x){
+  const row=document.createElement("div");row.className="lk-row";
+  const cb=document.createElement("input");cb.type="checkbox";cb.checked=!!lkSel[x.id];
+  cb.setAttribute("aria-label",x.date+"の記録を選ぶ");
+  cb.addEventListener("change",()=>{if(cb.checked)lkSel[x.id]=1;else delete lkSel[x.id];syncLkBulk();});
+  row.appendChild(cb);
+  const main=document.createElement("div");main.className="lk-main";
+  const dd=dateOf(x.date);
+  main.innerHTML='<div class="lk-head"><b>'+(dd.getMonth()+1)+"/"+dd.getDate()+"（"+"日月火水木金土"[dd.getDay()]+"）</b><span>"+
+    fmtMin(x.minutes)+"</span></div>"+(x.memo?'<div class="lk-memo">'+esc(x.memo)+"</div>":"");
+  const ctl=document.createElement("div");ctl.className="lk-ctl";
+  const ks=document.createElement("select");ks.className="kind";ks.setAttribute("aria-label","学習タイプ");
+  fillKindSelect(ks);
+  if(x.kind&&S.kinds.indexOf(x.kind)<0){const o=document.createElement("option");o.value=x.kind;o.textContent=x.kind;ks.appendChild(o);}
+  ks.value=x.kind||"";
+  ks.addEventListener("change",()=>{x.kind=ks.value;save();renderChapters();});
+  const cs=document.createElement("select");cs.setAttribute("aria-label","章");
+  fillChapterSelect(cs,x.subjectId,recHasChapter(x)?x.chapterId:"");
+  const sugId=recHasChapter(x)?"":suggestChapter(x);
+  const sug=document.createElement("button");sug.type="button";sug.className="lk-sug";
+  sug.textContent="候補：" + chapterName(sugId);
+  sug.hidden=!sugId;
+  cs.addEventListener("change",()=>{
+    setRecChapter(x,cs.value);save();
+    sug.hidden=!!cs.value||!sugId;
+    renderChapters();refreshLkCounts();
+  });
+  sug.addEventListener("click",()=>{
+    setRecChapter(x,sugId);cs.value=sugId;sug.hidden=true;save();
+    renderChapters();refreshLkCounts();
+  });
+  ctl.appendChild(ks);ctl.appendChild(cs);ctl.appendChild(sug);
+  main.appendChild(ctl);row.appendChild(main);
+  return row;
+}
+$("lkFilter").querySelectorAll("button").forEach(b=>{
+  b.addEventListener("click",()=>{
+    lkFilter=b.dataset.f;
+    $("lkFilter").querySelectorAll("button").forEach(y=>y.classList.toggle("on",y===b));
+    lkLimit=50;renderLinker();
+  });
+});
+$("lkApplyAll").addEventListener("click",()=>{
+  if(!chSubj)return;
+  const pairs=[];
+  S.sessions.forEach(x=>{
+    if(x.subjectId!==chSubj||recHasChapter(x))return;
+    const sg=suggestChapter(x);
+    if(sg)pairs.push([x,sg]);
+  });
+  if(!pairs.length)return;
+  if(!confirm(subjName(chSubj)+"の記録"+pairs.length+"件に、候補の章を設定します。よろしいですか？"))return;
+  pairs.forEach(p=>setRecChapter(p[0],p[1]));
+  save();renderAll();
+  toast(pairs.length+"件の記録に章を設定しました");
+});
+$("lkBulkApply").addEventListener("click",()=>{
+  const n0=Object.keys(lkSel).length;
+  if(!n0)return;
+  const ch=$("lkBulkCh").value,kd=$("lkBulkKind").value;
+  if(!ch&&kd==="__keep"){alert("設定する章か学習タイプを選んでください");return;}
+  let n=0;
+  S.sessions.forEach(x=>{
+    if(!lkSel[x.id])return;
+    if(ch)setRecChapter(x,ch);
+    if(kd!=="__keep")x.kind=kd;
+    n++;
+  });
+  lkSel={};
+  $("lkBulkCh").value="";$("lkBulkKind").value="__keep";
+  save();renderAll();
+  toast(n+"件の記録を更新しました");
+});
 
 /* ---------- 章のプリセット（試験範囲に沿った標準的な論点） ---------- */
 const CH_PRESET={
@@ -3017,7 +3207,7 @@ function renderAll(){
   fillChapterSelect($("addChapter"),$("addSubject").value,$("addChapter").value);
   checkBadges();
   renderCountdown();renderTimer();renderToday();renderWeek();renderLog();
-  renderCheer();renderTodayPlans();renderGoalHours();renderChapters();renderBadges();renderTargetsConf();
+  renderCheer();renderTodayPlans();renderGoalHours();renderChapters();renderLinker();renderBadges();renderTargetsConf();
   renderTiles();renderHeatmap();renderTrendChart();renderDowChart();renderPace();
   renderWeekChart();renderSubjChart();renderKindChart();renderConf();renderBackupInfo();renderReviewConf();
   if(S.timer.running){$("timerSubject").value=S.timer.subjectId;startTick();}
