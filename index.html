@@ -86,8 +86,11 @@ main section.tab.on{display:block;animation:fadeUp .22s ease}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 @media(max-width:640px){.grid2{grid-template-columns:1fr}}
 /* countdown */
-.count-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-@media(max-width:640px){.count-row{grid-template-columns:1fr}}
+.count-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+.count.ron{background:var(--scs)}
+.count.ron::before{background:var(--sc)}
+.count.ron .days{color:var(--sc)}
+.count.ron .prog i{background:var(--sc)}
 .count{position:relative;background:var(--boki-soft);border-radius:14px;padding:14px 16px 13px;overflow:hidden}
 .count.cpa{background:var(--cpa-soft)}
 .count::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--boki)}
@@ -335,14 +338,14 @@ hr.soft{border:none;border-top:1px solid var(--border-soft);margin:18px 0}
 .tp-sec{font-size:12px;color:var(--ink-3);letter-spacing:.08em;margin:12px 0 0}
 .tp-sec.late{color:var(--danger)}
 /* 合格目安時間 */
-.goalhrs{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-@media(max-width:640px){.goalhrs{grid-template-columns:1fr}}
+.goalhrs{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px}
 .gh .gh-k{font-size:12px;color:var(--ink-2);letter-spacing:.06em}
 .gh .gh-v{font-size:28px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.3}
 .gh .gh-v small{font-size:13px;font-weight:400;color:var(--ink-2)}
 .gh .gh-bar{height:12px;border-radius:6px;background:var(--border-soft);overflow:hidden;margin:8px 0 8px}
 .gh .gh-bar i{display:block;height:100%;border-radius:6px;background:var(--cpa)}
 .gh.boki .gh-bar i{background:var(--boki)}
+.gh.ron .gh-bar i{background:var(--sc)}
 .gh .gh-note{font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums;line-height:1.8}
 .gh .gh-note b{color:var(--ink)}
 .count .hrs{font-size:12px;color:var(--ink-2);margin-top:7px;font-variant-numeric:tabular-nums}
@@ -444,15 +447,20 @@ table.cht td{padding:4px 6px;border-bottom:1px solid var(--border-soft);vertical
 <!-- ============ 今日 ============ -->
 <section class="tab on" id="tab-home">
   <div class="count-row" style="margin-bottom:16px">
-    <div class="count">
-      <div class="label">日商簿記 1級</div><div class="days" id="bokiDays"></div>
-      <div class="when" id="bokiWhen"></div><div class="prog"><i id="bokiProg" style="width:0%"></i></div>
-      <div class="hrs" id="bokiHrs"></div>
-    </div>
     <div class="count cpa">
       <div class="label">公認会計士 短答式</div><div class="days" id="cpaDays"></div>
       <div class="when" id="cpaWhen"></div><div class="prog"><i id="cpaProg" style="width:0%"></i></div>
       <div class="hrs" id="cpaHrs"></div>
+    </div>
+    <div class="count ron sc sc5">
+      <div class="label">公認会計士 論文式</div><div class="days" id="ronDays"></div>
+      <div class="when" id="ronWhen"></div><div class="prog"><i id="ronProg" style="width:0%"></i></div>
+      <div class="hrs" id="ronHrs"></div>
+    </div>
+    <div class="count">
+      <div class="label">日商簿記 1級</div><div class="days" id="bokiDays"></div>
+      <div class="when" id="bokiWhen"></div><div class="prog"><i id="bokiProg" style="width:0%"></i></div>
+      <div class="hrs" id="bokiHrs"></div>
     </div>
   </div>
 
@@ -691,6 +699,7 @@ table.cht td{padding:4px 6px;border-bottom:1px solid var(--border-soft);vertical
     <div class="row-inline">
       <label class="f"><span>日商簿記 1級</span><input type="date" id="cfgBokiDate"></label>
       <label class="f"><span>公認会計士 短答式</span><input type="date" id="cfgCpaDate"></label>
+      <label class="f"><span>公認会計士 論文式</span><input type="date" id="cfgRonDate"></label>
     </div>
   </div>
   <div class="card">
@@ -699,9 +708,10 @@ table.cht td{padding:4px 6px;border-bottom:1px solid var(--border-soft);vertical
   </div>
   <div class="card">
     <h2>合格目安時間</h2>
-    <p class="muted">一般に、公認会計士は3,000〜5,000時間、簿記1級は500〜1,000時間ほどが合格までの目安と言われます。ご自身の計画に合わせて変えてください。</p>
+    <p class="muted">一般に、公認会計士は合計3,000〜5,000時間、簿記1級は500〜1,000時間ほどが合格までの目安と言われます。会計士は「短答式までに」と「論文式までに（合計）」を分けて決められます。最初に入っている値は仮のものなので、ご自身の計画に合わせて変えてください。短答式・論文式の期限は、上の「試験日」を使います。</p>
     <div class="form-grid">
-      <label class="f"><span>公認会計士（時間）</span><input type="number" id="tgCpa" min="1" max="20000"></label>
+      <label class="f"><span>会計士 短答式までに（時間）</span><input type="number" id="tgTantou" min="1" max="20000"></label>
+      <label class="f"><span>会計士 論文式までに・合計（時間）</span><input type="number" id="tgCpa" min="1" max="20000"></label>
       <label class="f"><span>簿記1級（時間）</span><input type="number" id="tgBoki" min="1" max="10000"></label>
     </div>
     <div class="form-grid">
@@ -709,8 +719,7 @@ table.cht td{padding:4px 6px;border-bottom:1px solid var(--border-soft);vertical
       <label class="f"><span>アプリ導入前の簿記1級の学習時間</span><input type="number" id="tgPriorBoki" min="0" max="10000"></label>
     </div>
     <div class="form-grid">
-      <label class="f"><span>会計士の目安を達成したい日</span><input type="date" id="tgCpaBy"></label>
-      <label class="f"><span>簿記1級の目安を達成したい日</span><input type="date" id="tgBokiBy"></label>
+      <label class="f"><span>簿記1級の目安を達成したい日（空欄なら試験日）</span><input type="date" id="tgBokiBy"></label>
     </div>
     <label class="rvtoggle"><input type="checkbox" id="tgIncBoki"> 簿記1級の学習時間も会計士の累計に含める</label>
   </div>
@@ -900,7 +909,8 @@ function defaultState(){
     kinds:["講義","問題集","朗読","テキスト","復習","模試"],
     settings:{bokiDate:"2026-11-15",cpaDate:"2026-12-13",goalHours:25,
       review:{enabled:true,kinds:["講義"],days:[3,7,30],minutes:30},ttRows:4,
-      targets:{cpa:3500,boki:800,includeBoki:true,priorCpa:0,priorBoki:0,cpaBy:"2028-08-20",bokiBy:""}},
+      targets:{cpa:3500,tantou:2500,boki:800,includeBoki:true,priorCpa:0,priorBoki:0,cpaBy:"2028-08-20",bokiBy:""},
+      ronbunDate:"2028-08-20"},
     timer:{running:false,onBreak:false,startTs:0,accumMs:0,breakStartTs:0,breakMs:0,subjectId:null,kind:""}
   };
 }
@@ -920,10 +930,12 @@ function normalizeState(st){
   if(!st.settings.targets||typeof st.settings.targets!=="object")st.settings.targets=d.settings.targets;
   else{
     const tg=st.settings.targets,dt=d.settings.targets;
-    ["cpa","boki","priorCpa","priorBoki"].forEach(k=>{if(typeof tg[k]!=="number")tg[k]=dt[k];});
+    ["cpa","tantou","boki","priorCpa","priorBoki"].forEach(k=>{if(typeof tg[k]!=="number")tg[k]=dt[k];});
     if(typeof tg.includeBoki!=="boolean")tg.includeBoki=dt.includeBoki;
     ["cpaBy","bokiBy"].forEach(k=>{if(typeof tg[k]!=="string")tg[k]=dt[k];});
   }
+  // 論文式の試験日：以前「会計士の目安を達成したい日」に入れていた日付を引き継ぐ
+  if(typeof st.settings.ronbunDate!=="string")st.settings.ronbunDate=st.settings.targets.cpaBy||d.settings.ronbunDate;
   if(!Array.isArray(st.chapters))st.chapters=[];
   if(!st.badges||typeof st.badges!=="object"){st.badges={};st.badgesSilent=true;}
   // 科目の色：未設定の科目には空いている色を順に割り当てる
@@ -1055,8 +1067,8 @@ function renderCountdown(){
     if(!dstr){$(elD).textContent="—";$(elW).textContent="";$(elP).style.width="0%";return;}
     const d=dateOf(dstr);
     const diff=Math.round((d-t)/86400000);
-    $(elD).innerHTML=diff>=0?("あと <b>"+diff+"</b><small> 日 ／ 約"+Math.max(1,Math.ceil(diff/7))+"週</small>"):"終了";
-    $(elW).textContent=d.getFullYear()+"年"+(d.getMonth()+1)+"月"+d.getDate()+"日（"+"日月火水木金土"[d.getDay()]+"）";
+    $(elD).innerHTML=diff>=0?("あと <b>"+diff+"</b><small> 日</small>"):"終了";
+    $(elW).textContent=d.getFullYear()+"年"+(d.getMonth()+1)+"月"+d.getDate()+"日（"+"日月火水木金土"[d.getDay()]+"）"+(diff>=7?"・約"+Math.ceil(diff/7)+"週":"");
     // 学習開始日から試験日までのうち、どこまで来たか
     let pct=0;
     if(start){
@@ -1068,11 +1080,13 @@ function renderCountdown(){
   };
   one(S.settings.bokiDate,"bokiDays","bokiWhen","bokiProg");
   one(S.settings.cpaDate,"cpaDays","cpaWhen","cpaProg");
+  one(S.settings.ronbunDate,"ronDays","ronWhen","ronProg");
   const et=examTotals(),tg=S.settings.targets;
   const hl=(min,target)=>"累計 <b>"+fmtHrs(min)+"</b> ／ 目安 "+target.toLocaleString()+"h（"+
     (target>0?Math.min(100,min/60/target*100).toFixed(1):"0")+"%）";
   $("bokiHrs").innerHTML=hl(et.boki,tg.boki);
-  $("cpaHrs").innerHTML=hl(et.cpa,tg.cpa);
+  $("cpaHrs").innerHTML=hl(et.cpa,tg.tantou);
+  $("ronHrs").innerHTML=hl(et.cpa,tg.cpa);
 }
 
 /* ---------- subject selects ---------- */
@@ -1973,7 +1987,8 @@ function renderGoalHours(){
   const cpaF=x=>subjTrack(x.subjectId)==="cpa"||(tg.includeBoki&&subjTrack(x.subjectId)==="boki");
   const bokiF=x=>subjTrack(x.subjectId)==="boki";
   box.innerHTML="";
-  [["公認会計士","cpa",et.cpa,tg.cpa,S.settings.cpaDate,"短答式",cpaF],
+  [["会計士 短答式まで","cpa",et.cpa,tg.tantou,S.settings.cpaDate,"短答式",cpaF],
+   ["会計士 論文式まで（合計）","ron sc sc5",et.cpa,tg.cpa,S.settings.ronbunDate,"論文式",cpaF],
    ["日商簿記1級","boki",et.boki,tg.boki,S.settings.bokiDate,"試験",bokiF]].forEach(it=>{
     const name=it[0],cls=it[1],min=it[2],target=it[3],exam=it[4],examLab=it[5],flt=it[6];
     const pct=target>0?Math.min(100,min/60/target*100):0;
@@ -2002,12 +2017,12 @@ function renderGoalHours(){
 }
 function renderTargetsConf(){
   const tg=S.settings.targets;
-  $("tgCpa").value=tg.cpa;$("tgBoki").value=tg.boki;
+  $("tgCpa").value=tg.cpa;$("tgBoki").value=tg.boki;$("tgTantou").value=tg.tantou;
   $("tgPriorCpa").value=tg.priorCpa;$("tgPriorBoki").value=tg.priorBoki;
   $("tgIncBoki").checked=!!tg.includeBoki;
-  $("tgCpaBy").value=tg.cpaBy||"";$("tgBokiBy").value=tg.bokiBy||"";
+  $("tgBokiBy").value=tg.bokiBy||"";
 }
-[["tgCpa","cpa",1],["tgBoki","boki",1],["tgPriorCpa","priorCpa",0],["tgPriorBoki","priorBoki",0]].forEach(it=>{
+[["tgTantou","tantou",1],["tgCpa","cpa",1],["tgBoki","boki",1],["tgPriorCpa","priorCpa",0],["tgPriorBoki","priorBoki",0]].forEach(it=>{
   $(it[0]).addEventListener("change",()=>{
     const v=parseInt($(it[0]).value,10);
     if(v>=it[2]){S.settings.targets[it[1]]=v;save();renderAll();}
@@ -2279,7 +2294,8 @@ function renderNeedPace(){
   const cpaF=x=>subjTrack(x.subjectId)==="cpa"||(tg.includeBoki&&subjTrack(x.subjectId)==="boki");
   const bokiF=x=>subjTrack(x.subjectId)==="boki";
   box.innerHTML="";
-  [["公認会計士","cpa",et.cpa,tg.cpa,tg.cpaBy,cpaF],
+  [["会計士 短答式","cpa",et.cpa,tg.tantou,S.settings.cpaDate,cpaF],
+   ["会計士 論文式（合計）","ron sc sc5",et.cpa,tg.cpa,S.settings.ronbunDate,cpaF],
    ["日商簿記1級","boki",et.boki,tg.boki,tg.bokiBy||S.settings.bokiDate,bokiF]].forEach(it=>{
     const name=it[0],cls=it[1],min=it[2],target=it[3],by=it[4],flt=it[5];
     const remain=Math.max(0,target*60-min);
@@ -2304,7 +2320,7 @@ function renderNeedPace(){
     box.appendChild(el);
   });
 }
-[["tgCpaBy","cpaBy"],["tgBokiBy","bokiBy"]].forEach(it=>{
+[["tgBokiBy","bokiBy"]].forEach(it=>{
   $(it[0]).addEventListener("change",()=>{S.settings.targets[it[1]]=$(it[0]).value||"";save();renderAll();});
 });
 
@@ -3150,7 +3166,7 @@ function renderPace(){
   const goal=S.settings.goalHours*60;
   const all=S.sessions.reduce((a,s)=>a+s.minutes,0);
   let any=false;
-  [["日商簿記 1級",S.settings.bokiDate,""],["公認会計士 短答式",S.settings.cpaDate,"cpa"]].forEach(ex=>{
+  [["公認会計士 短答式",S.settings.cpaDate,"cpa"],["公認会計士 論文式",S.settings.ronbunDate,"cpa"],["日商簿記 1級",S.settings.bokiDate,""]].forEach(ex=>{
     const name=ex[0],date=ex[1],cls=ex[2];
     if(!date)return;
     const diff=Math.round((dateOf(date)-dateOf(t))/86400000);
@@ -3275,6 +3291,7 @@ function renderKindChart(){
 function renderConf(){
   $("cfgBokiDate").value=S.settings.bokiDate||"";
   $("cfgCpaDate").value=S.settings.cpaDate||"";
+  $("cfgRonDate").value=S.settings.ronbunDate||"";
   $("cfgGoal").value=S.settings.goalHours;
   const ul=$("subjList");ul.innerHTML="";
   S.subjects.filter(s=>!s.archived).forEach(s=>{
@@ -3326,7 +3343,8 @@ $("btnAddKind").addEventListener("click",()=>{
   save();renderAll();
 });
 $("cfgBokiDate").addEventListener("change",e=>{S.settings.bokiDate=e.target.value;save();renderCountdown();});
-$("cfgCpaDate").addEventListener("change",e=>{S.settings.cpaDate=e.target.value;save();renderCountdown();});
+$("cfgCpaDate").addEventListener("change",e=>{S.settings.cpaDate=e.target.value;save();renderAll();});
+$("cfgRonDate").addEventListener("change",e=>{S.settings.ronbunDate=e.target.value;save();renderAll();});
 $("cfgGoal").addEventListener("change",e=>{const v=parseInt(e.target.value,10);if(v>0){S.settings.goalHours=v;save();renderToday();}});
 $("btnAddSubj").addEventListener("click",()=>{
   const name=$("newSubjName").value.trim();
