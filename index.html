@@ -398,6 +398,28 @@ table.cht td{padding:4px 6px;border-bottom:1px solid var(--border-soft);vertical
 .lk-bulk select{min-height:42px;width:auto;flex:1 1 160px;font-size:14px}
 .lk-bulk .muted{flex:0 0 auto}
 .lk-more{text-align:center;margin-top:10px}
+/* おまかせリスケ */
+.rs-bar{display:flex;align-items:center;gap:10px;justify-content:space-between;flex-wrap:wrap;background:var(--amber-soft);border-radius:12px;padding:10px 12px;margin-bottom:6px;font-size:13px;color:var(--ink)}
+.rs-bar b{color:var(--amber)}
+.rs-modal{max-width:600px;max-height:calc(100vh - 32px);overflow:auto}
+.rs-list{display:flex;flex-direction:column;margin:12px 0 10px;border-top:1px solid var(--border-soft)}
+.rs-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-soft);flex-wrap:wrap}
+.rs-row.off{opacity:.45}
+.rs-row input[type=checkbox]{width:20px;height:20px;accent-color:var(--boki);flex:none;margin:0}
+.rs-main{flex:1 1 180px;min-width:0}
+.rs-main b{display:flex;align-items:center;gap:6px;font-size:14px}
+.rs-main small{display:block;color:var(--ink-3);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rs-move{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.rs-move input{min-height:38px;width:150px;padding:4px 8px;font-size:14px}
+.rs-from{color:var(--ink-3);text-decoration:line-through}
+.rs-auto{font-size:10px;color:var(--ink-3)}
+#btnResched{margin-left:auto}
+#btnResched+#btnEditMode{margin-left:0}
+/* 必要なペース */
+.np-ok,.np-ng{display:inline-block;font-size:11px;font-weight:600;padding:2px 9px;border-radius:999px;margin-left:4px}
+.np-ok{background:var(--boki-soft);color:var(--boki)}
+.np-ng{background:var(--amber-soft);color:var(--amber)}
+.gh.np .gh-bar i{background:var(--boki)}
 </style>
 
 <div class="wrap">
@@ -497,6 +519,7 @@ table.cht td{padding:4px 6px;border-bottom:1px solid var(--border-soft);vertical
         <button data-m="week" class="on">週間（時間割）</button>
         <button data-m="month">月間</button>
       </div>
+      <button class="editbtn" id="btnResched">リスケ</button>
       <button class="editbtn" id="btnEditMode" aria-pressed="false">編集</button>
     </div>
     <div class="wk-nav">
@@ -608,6 +631,11 @@ table.cht td{padding:4px 6px;border-bottom:1px solid var(--border-soft);vertical
   </div>
 
   <div class="card">
+    <h2>合格目安時間までに必要なペース<span class="note">期限は設定タブで変更</span></h2>
+    <div class="goalhrs" id="needPace"></div>
+  </div>
+
+  <div class="card">
     <h2>学習ヒートマップ<span class="note">直近15週</span></h2>
     <div class="chart-scroll">
       <div id="heatMonths" class="heat-months"></div>
@@ -680,6 +708,10 @@ table.cht td{padding:4px 6px;border-bottom:1px solid var(--border-soft);vertical
       <label class="f"><span>アプリ導入前の会計士の学習時間</span><input type="number" id="tgPriorCpa" min="0" max="20000"></label>
       <label class="f"><span>アプリ導入前の簿記1級の学習時間</span><input type="number" id="tgPriorBoki" min="0" max="10000"></label>
     </div>
+    <div class="form-grid">
+      <label class="f"><span>会計士の目安を達成したい日</span><input type="date" id="tgCpaBy"></label>
+      <label class="f"><span>簿記1級の目安を達成したい日</span><input type="date" id="tgBokiBy"></label>
+    </div>
     <label class="rvtoggle"><input type="checkbox" id="tgIncBoki"> 簿記1級の学習時間も会計士の累計に含める</label>
   </div>
   <div class="card">
@@ -746,6 +778,25 @@ table.cht td{padding:4px 6px;border-bottom:1px solid var(--border-soft);vertical
 </div>
 <div class="tooltip" id="tooltip"></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<div class="overlay" id="rsOverlay">
+  <div class="modal rs-modal">
+    <h2>おまかせリスケ</h2>
+    <div class="mdate" id="rsSub"></div>
+    <div class="form-grid">
+      <label class="f"><span>いつから入れる</span><select id="rsStart"><option value="today">今日から</option><option value="tomorrow">明日から</option></select></label>
+      <label class="f"><span>1日に入れる予定の上限（分）</span><input type="number" id="rsCap" min="30" max="900" step="30"></label>
+    </div>
+    <span class="klabel">休みにする曜日（予定を入れない）</span>
+    <div class="kchips" id="rsOff"></div>
+    <div class="rs-list" id="rsList"></div>
+    <p class="muted" style="margin:0 0 6px">古い予定から順に、上限を超えない日の空いているコマへ入れます。日付は手で変えることもでき、チェックを外した予定は動かしません。</p>
+    <div class="timer-ctl" style="justify-content:flex-end">
+      <button class="btn ghost" id="rsCancel">キャンセル</button>
+      <button class="btn primary" id="rsApply">この内容でリスケ</button>
+    </div>
+  </div>
+</div>
 
 <div class="overlay" id="chRenameOverlay">
   <div class="modal">
@@ -849,7 +900,7 @@ function defaultState(){
     kinds:["講義","問題集","朗読","テキスト","復習","模試"],
     settings:{bokiDate:"2026-11-15",cpaDate:"2026-12-13",goalHours:25,
       review:{enabled:true,kinds:["講義"],days:[3,7,30],minutes:30},ttRows:4,
-      targets:{cpa:3500,boki:800,includeBoki:true,priorCpa:0,priorBoki:0}},
+      targets:{cpa:3500,boki:800,includeBoki:true,priorCpa:0,priorBoki:0,cpaBy:"2028-08-20",bokiBy:""}},
     timer:{running:false,onBreak:false,startTs:0,accumMs:0,breakStartTs:0,breakMs:0,subjectId:null,kind:""}
   };
 }
@@ -871,6 +922,7 @@ function normalizeState(st){
     const tg=st.settings.targets,dt=d.settings.targets;
     ["cpa","boki","priorCpa","priorBoki"].forEach(k=>{if(typeof tg[k]!=="number")tg[k]=dt[k];});
     if(typeof tg.includeBoki!=="boolean")tg.includeBoki=dt.includeBoki;
+    ["cpaBy","bokiBy"].forEach(k=>{if(typeof tg[k]!=="string")tg[k]=dt[k];});
   }
   if(!Array.isArray(st.chapters))st.chapters=[];
   if(!st.badges||typeof st.badges!=="object"){st.badges={};st.badgesSilent=true;}
@@ -1376,6 +1428,9 @@ function renderWeek(){
   $("wkNext").textContent=wk?"翌週 →":"翌月 →";
   $("wkToday").textContent=wk?"今週へ戻る":"今月へ戻る";
   $("btnEditMode").hidden=!wk;
+  const odN=rsTargets().length;
+  $("btnResched").textContent=odN?"リスケ（"+odN+"）":"リスケ";
+  $("btnResched").disabled=!odN;
   $("ttGrid").classList.toggle("editmode",wk&&editMode);
   $("calHint").textContent=!wk
     ?"日付をタップすると、その週の時間割を開きます。"
@@ -1950,6 +2005,7 @@ function renderTargetsConf(){
   $("tgCpa").value=tg.cpa;$("tgBoki").value=tg.boki;
   $("tgPriorCpa").value=tg.priorCpa;$("tgPriorBoki").value=tg.priorBoki;
   $("tgIncBoki").checked=!!tg.includeBoki;
+  $("tgCpaBy").value=tg.cpaBy||"";$("tgBokiBy").value=tg.bokiBy||"";
 }
 [["tgCpa","cpa",1],["tgBoki","boki",1],["tgPriorCpa","priorCpa",0],["tgPriorBoki","priorBoki",0]].forEach(it=>{
   $(it[0]).addEventListener("change",()=>{
@@ -2042,17 +2098,25 @@ function renderCheer(){
 function renderTodayPlans(){
   const t=todayStr(),box=$("tpList");box.innerHTML="";
   const todays=planSlots(S.plans.filter(p=>p.date===t)).sort((a,b)=>a.s-b.s);
-  const late=S.plans.filter(p=>p.date<t&&!p.done&&(p.reviewOf||p.kind==="復習"))
-    .sort((a,b)=>a.date<b.date?-1:1).slice(0,10);
+  const lateAll=rsTargets();
+  const late=lateAll.slice(0,10);
   $("tpNote").textContent=todays.length?("残り "+todays.filter(x=>!x.p.done).length+" / "+todays.length+"件"):"";
   if(!todays.length&&!late.length){
     box.innerHTML='<div class="empty">今日の予定はありません。週間タブの時間割から追加できます。</div>';
     return;
   }
+  if(lateAll.length){
+    const bar=document.createElement("div");bar.className="rs-bar";
+    bar.innerHTML="<span>期限が過ぎて終わっていない予定が <b>"+lateAll.length+"件</b> あります</span>";
+    const b=document.createElement("button");b.type="button";b.className="tp-btn go";b.textContent="おまかせリスケ";
+    b.addEventListener("click",openResched);
+    bar.appendChild(b);box.appendChild(bar);
+  }
   todays.forEach(x=>box.appendChild(tpRow(x.p,x.s,false)));
   if(late.length){
     const h=document.createElement("div");h.className="tp-sec late";
-    h.textContent="やり残しの復習（"+late.length+"件）";box.appendChild(h);
+    h.textContent="期限切れの予定（"+lateAll.length+"件"+(lateAll.length>late.length?"・古い順に"+late.length+"件を表示":"")+"）";
+    box.appendChild(h);
     late.forEach(p=>box.appendChild(tpRow(p,0,true)));
   }
 }
@@ -2084,6 +2148,165 @@ function tpRow(p,s,isLate){
   row.appendChild(ck);
   return row;
 }
+
+/* ---------- おまかせリスケ ---------- */
+// 期限切れ（昨日以前で未完了）の予定を、上限時間と休みの曜日を守って空いている日へ振り分ける
+let rsRows=[];
+function rsTargets(){
+  const t=todayStr();
+  return S.plans.filter(p=>!p.done&&p.date<t)
+    .sort((a,b)=>a.date<b.date?-1:(a.date>b.date?1:((a.slot||0)-(b.slot||0))));
+}
+function rsCapVal(){return Math.max(30,parseInt($("rsCap").value,10)||180);}
+function openResched(){
+  const list=rsTargets();
+  if(!list.length){toast("期限切れの予定はありません");return;}
+  rsRows=list.map(p=>({p:p,on:true,date:"",manual:false}));
+  $("rsStart").value="today";
+  $("rsCap").value=S.settings.rsCap||Math.max(60,Math.round(dayTarget()/30)*30)||180;
+  renderRsOff();rsCompute();renderRsList();
+  $("rsOverlay").classList.add("on");
+}
+function closeResched(){$("rsOverlay").classList.remove("on");rsRows=[];}
+function renderRsOff(){
+  const off=S.settings.rsOff||[],box=$("rsOff");box.innerHTML="";
+  [1,2,3,4,5,6,0].forEach(wd=>{
+    const b=document.createElement("button");b.type="button";
+    b.className="kchip"+(off.indexOf(wd)>=0?" on":"");b.textContent="日月火水木金土"[wd];
+    b.setAttribute("aria-pressed",off.indexOf(wd)>=0?"true":"false");
+    b.addEventListener("click",()=>{
+      const o=(S.settings.rsOff||[]).slice(),i=o.indexOf(wd);
+      if(i>=0)o.splice(i,1);
+      else{if(o.length>=6){alert("少なくとも1日は予定を入れる曜日を残してください");return;}o.push(wd);}
+      S.settings.rsOff=o;save();
+      renderRsOff();rsCompute();renderRsList();
+    });
+    box.appendChild(b);
+  });
+}
+function rsCompute(){
+  const t=todayStr();
+  const start=$("rsStart").value==="tomorrow"?addDays(t,1):t;
+  const cap=rsCapVal(),off=S.settings.rsOff||[];
+  const moving={};rsRows.forEach(r=>{moving[r.p.id]=1;});
+  const load={};
+  S.plans.forEach(p=>{if(!moving[p.id]&&p.date>=start)load[p.date]=(load[p.date]||0)+(p.minutes||60);});
+  // 手で日付を決めた予定を先に置く
+  rsRows.forEach(r=>{if(r.on&&r.manual&&r.date)load[r.date]=(load[r.date]||0)+(r.p.minutes||60);});
+  rsRows.forEach(r=>{
+    if(!r.on||r.manual)return;
+    const m=r.p.minutes||60;
+    let d=start;
+    for(let i=0;i<180;i++){
+      if(off.indexOf(dateOf(d).getDay())<0){
+        const l=load[d]||0;
+        if(l===0||l+m<=cap)break;
+      }
+      d=addDays(d,1);
+    }
+    r.date=d;load[d]=(load[d]||0)+m;
+  });
+}
+function renderRsList(){
+  const box=$("rsList");box.innerHTML="";
+  const on=rsRows.filter(r=>r.on&&r.date);
+  const ds=on.map(r=>r.date).sort();
+  const off=(S.settings.rsOff||[]).slice().sort((a,b)=>((a+6)%7)-((b+6)%7)).map(w=>"日月火水木金土"[w]).join("");
+  $("rsSub").textContent=on.length
+    ?(on.length+"件を "+mdOf(ds[0])+"〜"+mdOf(ds[ds.length-1])+" に振り分けます（1日 "+fmtMin(rsCapVal())+"まで"+(off?"・"+off+"は休み":"")+"）")
+    :"動かす予定がありません";
+  rsRows.forEach(r=>{
+    const p=r.p,row=document.createElement("div");row.className="rs-row"+(r.on?"":" off");
+    const cb=document.createElement("input");cb.type="checkbox";cb.checked=r.on;
+    cb.setAttribute("aria-label",(p.subjectId?subjName(p.subjectId):"予定")+"を動かす");
+    cb.addEventListener("change",()=>{r.on=cb.checked;if(!r.on)r.date="";rsCompute();renderRsList();});
+    row.appendChild(cb);
+    const main=document.createElement("div");main.className="rs-main";
+    main.innerHTML="<b><span class=\"dot "+(p.subjectId?subjCls(p.subjectId):"")+"\"></span>"+esc(p.subjectId?subjName(p.subjectId):"予定")+"</b><small>"+
+      esc([p.kind,chapterName(p.chapterId),p.text,(p.minutes||60)+"分"].filter(Boolean).join("・"))+"</small>";
+    row.appendChild(main);
+    const mv=document.createElement("div");mv.className="rs-move";
+    mv.innerHTML='<span class="rs-from">'+mdOf(p.date)+"</span><span>→</span>";
+    const di=document.createElement("input");di.type="date";di.value=r.date||"";di.min=todayStr();di.disabled=!r.on;
+    di.setAttribute("aria-label","新しい日付");
+    di.addEventListener("change",()=>{
+      if(!di.value)return;
+      r.date=di.value;r.manual=true;rsCompute();renderRsList();
+    });
+    mv.appendChild(di);
+    if(r.on&&r.date){
+      const lab=document.createElement("span");lab.className="rs-auto";
+      lab.textContent="（"+"日月火水木金土"[dateOf(r.date).getDay()]+(r.manual?"・手動":"")+"）";
+      mv.appendChild(lab);
+    }
+    row.appendChild(mv);
+    box.appendChild(row);
+  });
+  $("rsApply").disabled=!on.length;
+}
+$("btnResched").addEventListener("click",openResched);
+$("rsCancel").addEventListener("click",closeResched);
+$("rsOverlay").addEventListener("click",e=>{if(e.target===$("rsOverlay"))closeResched();});
+$("rsStart").addEventListener("change",()=>{rsCompute();renderRsList();});
+$("rsCap").addEventListener("change",()=>{
+  const v=parseInt($("rsCap").value,10);
+  if(v>=30){S.settings.rsCap=v;save();}
+  rsCompute();renderRsList();
+});
+$("rsApply").addEventListener("click",()=>{
+  const on=rsRows.filter(r=>r.on&&r.date);
+  if(!on.length)return;
+  autoBackupNow();
+  const byDate={};
+  on.forEach(r=>{(byDate[r.date]=byDate[r.date]||[]).push(r.p);});
+  Object.keys(byDate).forEach(d=>{
+    const mv=byDate[d];
+    const existing=S.plans.filter(p=>p.date===d&&mv.indexOf(p)<0);
+    const used={};
+    // もともとある予定は今の位置で固定し、空いているコマへ入れる
+    planSlots(existing).forEach(x=>{if(typeof x.p.slot!=="number")x.p.slot=x.s;used[x.s]=1;});
+    mv.forEach(p=>{let sl=0;while(used[sl])sl++;used[sl]=1;p.date=d;p.slot=sl;});
+  });
+  const n=on.length;
+  closeResched();save();renderAll();
+  toast(n+"件の予定をリスケしました");
+});
+
+/* ---------- 合格目安時間までに必要なペース ---------- */
+function ymdJa(ds){const d=dateOf(ds);return d.getFullYear()+"年"+(d.getMonth()+1)+"月"+d.getDate()+"日";}
+function renderNeedPace(){
+  const tg=S.settings.targets,et=examTotals(),box=$("needPace"),t=todayStr();
+  const cpaF=x=>subjTrack(x.subjectId)==="cpa"||(tg.includeBoki&&subjTrack(x.subjectId)==="boki");
+  const bokiF=x=>subjTrack(x.subjectId)==="boki";
+  box.innerHTML="";
+  [["公認会計士","cpa",et.cpa,tg.cpa,tg.cpaBy,cpaF],
+   ["日商簿記1級","boki",et.boki,tg.boki,tg.bokiBy||S.settings.bokiDate,bokiF]].forEach(it=>{
+    const name=it[0],cls=it[1],min=it[2],target=it[3],by=it[4],flt=it[5];
+    const remain=Math.max(0,target*60-min);
+    const avgDay=recentWeeklyAvg(flt)/7;
+    const head='<div class="gh-k">'+name+"　残り "+fmtHrs(remain)+"（目安 "+target.toLocaleString()+"h・累計 "+fmtHrs(min)+"）</div>";
+    const el=document.createElement("div");el.className="gh np "+cls;
+    if(remain<=0){
+      el.innerHTML=head+'<div class="gh-v">達成</div><div class="gh-note">目安の時間に到達しています。</div>';
+    }else if(!by||by<=t){
+      el.innerHTML=head+'<div class="gh-v">—</div><div class="gh-note">設定タブの「目安を達成したい日」に未来の日付を入れると、必要な1日平均を計算します。</div>';
+    }else{
+      const days=Math.max(1,Math.round((dateOf(by)-dateOf(t))/86400000));
+      const needDay=remain/days,ok=avgDay>=needDay;
+      const ratio=Math.min(100,needDay>0?avgDay/needDay*100:100);
+      el.innerHTML=head+
+        '<div class="gh-v">'+fmtH(needDay)+"<small> 時間/日</small></div>"+
+        '<div class="gh-note">'+ymdJa(by)+"まで あと"+days+"日 ／ 週に "+fmtH(needDay*7)+"時間</div>"+
+        '<div class="gh-bar"><i style="width:'+ratio.toFixed(1)+'%"></i></div>'+
+        '<div class="gh-note">直近4週の実績 <b>'+fmtH(avgDay)+"時間/日</b>"+
+        (ok?'<span class="np-ok">このペースで間に合います</span>':'<span class="np-ng">1日あと '+fmtH(needDay-avgDay)+"時間</span>")+"</div>";
+    }
+    box.appendChild(el);
+  });
+}
+[["tgCpaBy","cpaBy"],["tgBokiBy","bokiBy"]].forEach(it=>{
+  $(it[0]).addEventListener("change",()=>{S.settings.targets[it[1]]=$(it[0]).value||"";save();renderAll();});
+});
 
 /* ---------- 予定の操作メニュー ---------- */
 let sheetFor=null;
@@ -3219,7 +3442,7 @@ function renderAll(){
   checkBadges();
   renderCountdown();renderTimer();renderToday();renderWeek();renderLog();
   renderCheer();renderTodayPlans();renderGoalHours();renderChapters();renderLinker();renderBadges();renderTargetsConf();
-  renderTiles();renderHeatmap();renderTrendChart();renderDowChart();renderPace();
+  renderTiles();renderNeedPace();renderHeatmap();renderTrendChart();renderDowChart();renderPace();
   renderWeekChart();renderSubjChart();renderKindChart();renderConf();renderBackupInfo();renderReviewConf();
   if(S.timer.running){$("timerSubject").value=S.timer.subjectId;startTick();}
 }
